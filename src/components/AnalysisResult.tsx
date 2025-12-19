@@ -425,7 +425,7 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
                                         <p className="text-sm text-zinc-400 italic truncate mt-0.5">"{song.reason}"</p>
                                     </div>
                                     <a
-                                        href={`https://open.spotify.com/search/${encodeURIComponent(song.title + " " + song.artist)}`}
+                                        href={`https://open.spotify.com/search?q=${encodeURIComponent(song.title + " " + song.artist)}&type=track`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="p-3 bg-zinc-800 rounded-full hover:bg-[#1DB954] hover:text-white transition-all transform hover:scale-110"
