@@ -17,7 +17,33 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
     const receiptRef = useRef<HTMLDivElement>(null);
     const pdfRef = useRef<HTMLDivElement>(null); // Ref for the visible UI
     const desktopPdfRef = useRef<HTMLDivElement>(null); // Ref for the hidden Desktop PDF template
+
     const [isThinking, setIsThinking] = useState(false);
+    const [linkCopied, setLinkCopied] = useState(false);
+    const [shareLoading, setShareLoading] = useState(false);
+
+    const handleShare = async () => {
+        setShareLoading(true);
+        try {
+            const res = await fetch("/api/share", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(result),
+            });
+            const data = await res.json();
+
+            if (data.id) {
+                const url = `${window.location.origin}?id=${data.id}`;
+                await navigator.clipboard.writeText(url);
+                setLinkCopied(true);
+                setTimeout(() => setLinkCopied(false), 2000);
+            }
+        } catch (error) {
+            console.error("Share failed", error);
+        } finally {
+            setShareLoading(false);
+        }
+    };
 
     // Get participant names for filenames
     const names = result.chartData.dominance.map(d => d.name).join("_") || "readtheroom";
@@ -100,6 +126,13 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
                     ← Return to input
                 </button>
                 <div className="flex gap-4 w-full md:w-auto">
+                    <button
+                        onClick={handleShare}
+                        disabled={shareLoading}
+                        className="hidden md:flex bg-zinc-100 text-zinc-900 border border-zinc-200 px-6 py-2 rounded-full text-sm font-bold shadow-sm hover:bg-zinc-200 transition-colors items-center gap-2 disabled:opacity-50"
+                    >
+                        {shareLoading ? "Creating..." : linkCopied ? "✅ Copied!" : "🔗 Copy Short Link"}
+                    </button>
                     <button
                         onClick={handleDownloadPDF}
                         disabled={isThinking}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import LandingHero from "@/components/LandingHero";
 import ChatInput from "@/components/ChatInput";
 import AnalysisResultView from "@/components/AnalysisResult";
@@ -8,8 +8,10 @@ import ErrorView from "@/components/ErrorView";
 import ExportInstructions from "@/components/ExportInstructions";
 import { analyzeChatWithGemini, type AnalysisResult } from "@/lib/analyzer";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSearchParams } from "next/navigation";
 
-export default function Home() {
+function AppContent() {
+  const searchParams = useSearchParams();
   const [view, setView] = useState<"landing" | "input" | "result" | "error" | "instructions">("landing");
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -32,7 +34,26 @@ export default function Home() {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
 
   useEffect(() => {
-    // Load saved result from localStorage on mount
+    // 1. Check for shared ID
+    const id = searchParams.get("id");
+    if (id) {
+        setLoading(true);
+        fetch(`/api/share?id=${id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    console.error("Share not found");
+                } else {
+                    setResult(data);
+                    setView("result");
+                }
+            })
+            .catch(err => console.error("Failed to load share", err))
+            .finally(() => setLoading(false));
+            return;
+    }
+
+    // 2. Load saved result from localStorage (if no ID)
     const savedResult = localStorage.getItem("vibe_check_result");
     if (savedResult) {
       try {
@@ -44,7 +65,7 @@ export default function Home() {
         localStorage.removeItem("vibe_check_result");
       }
     }
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (loading) {
@@ -56,7 +77,6 @@ export default function Home() {
   }, [loading]);
 
   const handleBack = () => {
-    // Clear saved result when going back to start over
     localStorage.removeItem("vibe_check_result");
     setResult(null);
     setView("landing");
@@ -78,23 +98,18 @@ export default function Home() {
             className="min-h-screen pt-20 pb-10 flex items-center justify-center p-4"
           >
             <ChatInput
-              onBack={() => setView("landing")} // Keeps landing view navigation simply without clearing (or should it clear? "Back" from input usually just goes to landing. Let's keep it simple. Only clear result if we had one?)
-              // Actually, wait. If I was in "result" and hit back, I want to clear.
-              // If I am in "input" and hit back, I just go to landing.
-              // So this line 59 is fine as is: onBack={() => setView("landing")}
+              onBack={() => setView("landing")} 
               onShowInstructions={() => setView("instructions")}
               onAnalyze={async (text, apiKey) => {
                 setLoading(true);
                 try {
                   const res = await analyzeChatWithGemini(text, apiKey);
 
-                  // Check for critical failures that should trigger the error page
                   if (res.roast.startsWith("Internal Error:")) {
                     setErrorMsg(res.roast.replace("Internal Error:", "").trim());
                     setView("error");
                   } else {
                     setResult(res);
-                    // SAVE RESULT
                     localStorage.setItem("vibe_check_result", JSON.stringify(res));
                     setView("result");
                   }
@@ -148,14 +163,20 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            className="min-h-screen flex items-center justify-center"
           >
-            <ErrorView
-              error={errorMsg}
-              onRetry={() => setView("input")}
-            />
+            <ErrorView error={errorMsg} onRetry={() => setView("input")} />
           </motion.div>
         )}
       </AnimatePresence>
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-zinc-950" />}>
+      <AppContent />
+    </Suspense>
   );
 }
