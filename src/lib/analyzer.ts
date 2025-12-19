@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export interface AnalysisResult {
     vibeHeadline: string;
     confidence: number;
+    shareId?: string;
     stats: {
         totalMessages: number;
         youCount: number;

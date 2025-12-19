@@ -21,8 +21,18 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
     const [isThinking, setIsThinking] = useState(false);
     const [linkCopied, setLinkCopied] = useState(false);
     const [shareLoading, setShareLoading] = useState(false);
+    // Initialize shareId from the result prop if it exists (for restored sessions)
+    const [shareId, setShareId] = useState<string | null>(result.shareId || null);
 
     const handleShare = async () => {
+        if (shareId) {
+            const url = `${window.location.origin}?id=${shareId}`;
+            await navigator.clipboard.writeText(url);
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 2000);
+            return;
+        }
+
         setShareLoading(true);
         try {
             const res = await fetch("/api/share", {
@@ -33,6 +43,16 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
             const data = await res.json();
 
             if (data.id) {
+                setShareId(data.id);
+
+                // Update localStorage with the new shareId so it persists refresh
+                const saved = localStorage.getItem("vibe_check_result");
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    parsed.shareId = data.id;
+                    localStorage.setItem("vibe_check_result", JSON.stringify(parsed));
+                }
+
                 const url = `${window.location.origin}?id=${data.id}`;
                 await navigator.clipboard.writeText(url);
                 setLinkCopied(true);
