@@ -742,7 +742,7 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
 
                     {/* Footer */}
                     <div className="text-center pb-8 border-t border-zinc-100 pt-8 mt-16">
-                        <h2 className="text-xl font-black tracking-tighter text-zinc-900 mb-2">READ THE ROOM</h2>
+                        <h2 className="text-xl font-black tracking-tighter text-zinc-900 mb-2">read-the-room-v1.vercel.app</h2>
                         <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">
                             COMPREHENSIVE VIBE AUDIT • {new Date().toLocaleDateString()}
                         </p>
@@ -858,7 +858,7 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
                                 border: '2px solid #18181b' // Force border to ensure dimensions
                             }}>
                                 <p style={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', color: '#ffffff', marginBottom: '8px', letterSpacing: '0.2em', lineHeight: '1' }}>GET ROASTED AT</p>
-                                <p style={{ fontSize: '24px', fontWeight: '900', color: '#ffffff', letterSpacing: '0.05em', lineHeight: '1' }}>READ THE ROOM</p>
+                                <p style={{ fontSize: '14px', fontWeight: '900', color: '#ffffff', letterSpacing: '0.05em', lineHeight: '1' }}>read-the-room-v1.vercel.app</p>
                             </div>
                         </div>
                     </div>
