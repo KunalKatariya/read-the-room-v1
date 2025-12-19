@@ -15,13 +15,20 @@ export async function POST(request: Request) {
         }
 
         const id = uuidv4();
+
+        // Debug checks
+        if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
+            console.error("Missing Vercel KV environment variables");
+            return NextResponse.json({ error: "Database not connected (Missing Env Vars)" }, { status: 500 });
+        }
+
         // Store in KV with expiration
         await kv.set(`share:${id}`, body, { ex: EXPIRATION_SECONDS });
 
         return NextResponse.json({ id });
-    } catch (error) {
+    } catch (error: any) {
         console.error("Share error:", error);
-        return NextResponse.json({ error: "Failed to create share link" }, { status: 500 });
+        return NextResponse.json({ error: "Failed to create share link", details: error.message || String(error) }, { status: 500 });
     }
 }
 

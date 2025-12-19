@@ -129,7 +129,7 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
                     <button
                         onClick={handleShare}
                         disabled={shareLoading}
-                        className="hidden md:flex bg-zinc-100 text-zinc-900 border border-zinc-200 px-6 py-2 rounded-full text-sm font-bold shadow-sm hover:bg-zinc-200 transition-colors items-center gap-2 disabled:opacity-50"
+                        className="flex-1 md:flex-none bg-zinc-100 text-zinc-900 border border-zinc-200 px-6 py-2 rounded-full text-sm font-bold shadow-sm hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                         {shareLoading ? "Creating..." : linkCopied ? "✅ Copied!" : "🔗 Copy Short Link"}
                     </button>
