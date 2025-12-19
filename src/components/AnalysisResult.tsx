@@ -160,6 +160,14 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
                     <div className="inline-block px-4 py-1.5 bg-zinc-50 rounded-full text-xs font-semibold mb-6 uppercase tracking-wider text-zinc-500 border border-zinc-100">
                         The Verdict
                     </div>
+                    <div className="text-zinc-400 font-medium mb-4 text-sm uppercase tracking-wide">
+                        Analysis of {result.chartData.dominance.map((d, i) => (
+                            <span key={i}>
+                                {i > 0 && " & "}
+                                <strong className="text-zinc-600 border-b-2 border-zinc-200/50">{d.name}</strong>
+                            </span>
+                        ))}
+                    </div>
                     <h1 className="text-3xl md:text-6xl font-bold mb-6 tracking-tight text-zinc-900 leading-tight">
                         {result.vibeHeadline}
                     </h1>
@@ -501,6 +509,14 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
                     <div className="text-center mb-20">
                         <div className="inline-block px-4 py-1.5 bg-zinc-50 rounded-full text-xs font-semibold mb-6 uppercase tracking-wider text-zinc-500 border border-zinc-100">
                             The Verdict
+                        </div>
+                        <div className="text-zinc-400 font-medium mb-4 text-sm uppercase tracking-wide">
+                            Analysis of {result.chartData.dominance.map((d, i) => (
+                                <span key={i}>
+                                    {i > 0 && " & "}
+                                    <strong className="text-zinc-600 border-b-2 border-zinc-200/50">{d.name}</strong>
+                                </span>
+                            ))}
                         </div>
                         <h1 className="text-6xl font-bold mb-6 tracking-tight text-zinc-900 leading-tight">
                             {result.vibeHeadline}
