@@ -8,6 +8,8 @@ import { useRef, useState } from "react";
 
 import { jsPDF } from "jspdf";
 
+import { v4 as uuidv4 } from "uuid";
+
 interface AnalysisResultViewProps {
     result: AnalysisResult;
     onBack: () => void;
@@ -25,6 +27,7 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
     const [shareId, setShareId] = useState<string | null>(result.shareId || null);
 
     const handleShare = async () => {
+        // 1. Reuse existing ID if available
         if (shareId) {
             const url = `${window.location.origin}?id=${shareId}`;
             await navigator.clipboard.writeText(url);
@@ -33,33 +36,41 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
             return;
         }
 
+        // 2. Generate new ID client-side immediately
+        const newId = uuidv4();
+        const url = `${window.location.origin}?id=${newId}`;
+
+        // 3. COPY SYNCHRONOUSLY (Fixes Safari)
+        setLinkCopied(true);
+        // We catch the promise but don't await it blocking the UI update for "Copied!"
+        navigator.clipboard.writeText(url).catch(console.error);
+        setTimeout(() => setLinkCopied(false), 2000);
+
+        // 4. Update State & LocalStorage immediately
+        setShareId(newId);
+        const saved = localStorage.getItem("vibe_check_result");
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            parsed.shareId = newId;
+            localStorage.setItem("vibe_check_result", JSON.stringify(parsed));
+        }
+
+        // 5. Save to Server in background
         setShareLoading(true);
         try {
-            const res = await fetch("/api/share", {
+            // Include sharesId in the stored object too
+            const payload = { ...result, shareId: newId };
+
+            await fetch(`/api/share?id=${newId}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(result),
+                body: JSON.stringify(payload),
             });
-            const data = await res.json();
-
-            if (data.id) {
-                setShareId(data.id);
-
-                // Update localStorage with the new shareId so it persists refresh
-                const saved = localStorage.getItem("vibe_check_result");
-                if (saved) {
-                    const parsed = JSON.parse(saved);
-                    parsed.shareId = data.id;
-                    localStorage.setItem("vibe_check_result", JSON.stringify(parsed));
-                }
-
-                const url = `${window.location.origin}?id=${data.id}`;
-                await navigator.clipboard.writeText(url);
-                setLinkCopied(true);
-                setTimeout(() => setLinkCopied(false), 2000);
-            }
+            // We ignore the response ID since we defined it
         } catch (error) {
-            console.error("Share failed", error);
+            console.error("Share failed to save to server", error);
+            // Ideally revert state here if critical, but for now we assume eventual consistency or retry
+            // In a real app we might show a toast "Failed to save link"
         } finally {
             setShareLoading(false);
         }

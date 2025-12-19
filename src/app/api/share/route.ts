@@ -23,7 +23,9 @@ export async function POST(request: Request) {
             token,
         });
 
-        const id = uuidv4();
+        const { searchParams } = new URL(request.url);
+        const id = searchParams.get("id") || uuidv4();
+
         // Store in KV with expiration
         await kv.set(`share:${id}`, body, { ex: EXPIRATION_SECONDS });
 
