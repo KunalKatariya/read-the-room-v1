@@ -1,4 +1,4 @@
-import { kv } from "@vercel/kv";
+import { createClient } from "@vercel/kv";
 import { NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
 
@@ -9,19 +9,21 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
 
-        // Simple validation
-        if (!body || !body.vibeHeadline || !body.roast) {
-            return NextResponse.json({ error: "Invalid analysis data" }, { status: 400 });
-        }
-
-        const id = uuidv4();
+        const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+        const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
         // Debug checks
-        if (!process.env.KV_REST_API_URL || !process.env.KV_REST_API_TOKEN) {
-            console.error("Missing Vercel KV environment variables");
+        if (!url || !token) {
+            console.error("Missing Redis/KV environment variables");
             return NextResponse.json({ error: "Database not connected (Missing Env Vars)" }, { status: 500 });
         }
 
+        const kv = createClient({
+            url,
+            token,
+        });
+
+        const id = uuidv4();
         // Store in KV with expiration
         await kv.set(`share:${id}`, body, { ex: EXPIRATION_SECONDS });
 
@@ -41,6 +43,18 @@ export async function GET(request: Request) {
     }
 
     try {
+        const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+        const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+
+        if (!url || !token) {
+            return NextResponse.json({ error: "Database not connected" }, { status: 500 });
+        }
+
+        const kv = createClient({
+            url,
+            token,
+        });
+
         const data = await kv.get(`share:${id}`);
 
         if (!data) {
