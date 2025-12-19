@@ -32,6 +32,21 @@ export default function Home() {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
 
   useEffect(() => {
+    // Load saved result from localStorage on mount
+    const savedResult = localStorage.getItem("vibe_check_result");
+    if (savedResult) {
+      try {
+        const parsed = JSON.parse(savedResult);
+        setResult(parsed);
+        setView("result");
+      } catch (e) {
+        console.error("Failed to parse saved result", e);
+        localStorage.removeItem("vibe_check_result");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     if (loading) {
       const interval = setInterval(() => {
         setLoadingMsgIndex((prev) => (prev + 1) % loadingMessages.length);
@@ -39,6 +54,13 @@ export default function Home() {
       return () => clearInterval(interval);
     }
   }, [loading]);
+
+  const handleBack = () => {
+    // Clear saved result when going back to start over
+    localStorage.removeItem("vibe_check_result");
+    setResult(null);
+    setView("landing");
+  };
 
   return (
     <main className="min-h-screen bg-background relative selection:bg-zinc-200 text-foreground font-sans">
@@ -56,7 +78,10 @@ export default function Home() {
             className="min-h-screen pt-20 pb-10 flex items-center justify-center p-4"
           >
             <ChatInput
-              onBack={() => setView("landing")}
+              onBack={() => setView("landing")} // Keeps landing view navigation simply without clearing (or should it clear? "Back" from input usually just goes to landing. Let's keep it simple. Only clear result if we had one?)
+              // Actually, wait. If I was in "result" and hit back, I want to clear.
+              // If I am in "input" and hit back, I just go to landing.
+              // So this line 59 is fine as is: onBack={() => setView("landing")}
               onShowInstructions={() => setView("instructions")}
               onAnalyze={async (text, apiKey) => {
                 setLoading(true);
@@ -69,6 +94,8 @@ export default function Home() {
                     setView("error");
                   } else {
                     setResult(res);
+                    // SAVE RESULT
+                    localStorage.setItem("vibe_check_result", JSON.stringify(res));
                     setView("result");
                   }
                 } catch (e: any) {
@@ -99,7 +126,7 @@ export default function Home() {
             animate={{ opacity: 1 }}
             className="min-h-screen flex items-center justify-center"
           >
-            <AnalysisResultView result={result} onBack={() => setView("input")} />
+            <AnalysisResultView result={result} onBack={handleBack} />
           </motion.div>
         )}
 

@@ -24,11 +24,8 @@ export default function ErrorView({ error, onRetry }: ErrorViewProps) {
                     <span className="font-bold text-zinc-800">It's not you, it's us.</span> (Okay, it might be a little bit you).
                 </p>
 
-                {error && (
-                    <div className="bg-red-50 text-red-600 text-xs font-mono p-3 rounded-lg mb-8 text-left overflow-x-auto">
-                        Error: {error}
-                    </div>
-                )}
+                {/* Hidden for users, check console if needed */}
+                {/* {error && <div className="hidden">Error: {error}</div>} */}
 
                 <button
                     onClick={onRetry}

@@ -19,6 +19,9 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
     const desktopPdfRef = useRef<HTMLDivElement>(null); // Ref for the hidden Desktop PDF template
     const [isThinking, setIsThinking] = useState(false);
 
+    // Get participant names for filenames
+    const names = result.chartData.dominance.map(d => d.name).join("_") || "readtheroom";
+
     const handleDownloadReceipt = async () => {
         if (!receiptRef.current) return;
         setIsThinking(true);
@@ -30,7 +33,7 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
             });
             const link = document.createElement("a");
             link.href = dataUrl;
-            link.download = "readtheroom-story.png";
+            link.download = `${names}_story.png`;
             link.click();
         } catch (error) {
             console.error("Failed to generate receipt", error);
@@ -63,7 +66,7 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
             });
 
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save("readtheroom-audit.pdf");
+            pdf.save(`${names}_report.pdf`);
         } catch (error) {
             console.error("Failed to generate PDF", error);
         } finally {
@@ -109,7 +112,7 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
                         disabled={isThinking}
                         className="flex-1 md:flex-none bg-black text-white px-6 py-3 md:py-2 rounded-full text-sm font-bold shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
                     >
-                        {isThinking ? "Printing..." : "📸 Insta Story"}
+                        {isThinking ? "Printing..." : "📸 Download Receipt"}
                     </button>
                 </div>
             </div>
