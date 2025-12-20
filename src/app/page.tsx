@@ -55,17 +55,24 @@ function AppContent() {
           if (data.error || !data.roast) {
             // Not a share ID? Maybe it's an Analysis ID (from payment redirect)
             // Dynamically import Server Action to fetch private analysis
-            const { getAnalysisAction } = await import("./actions");
-            const privateResult = await getAnalysisAction(id);
+            try {
+              const { getAnalysisAction } = await import("./actions");
+              const privateResult = await getAnalysisAction(id);
 
-            if (privateResult) {
-              setResult(privateResult);
-              setIsPublicShare(false); // Explicitly private/locked
-              setView("result");
-              // If payment=success, we rely on AnalysisResult's internal logic to unlock
-            } else {
-              console.error("Analysis not found");
-              setView("landing"); // Or error
+              if (privateResult) {
+                setResult(privateResult);
+                setIsPublicShare(false); // Explicitly private/locked
+                setView("result");
+              } else {
+                // It wasn't a private analysis either. Real error.
+                console.error("Analysis not found");
+                setErrorMsg(data.error || "Analysis not found. The link might be expired or invalid.");
+                setView("error");
+              }
+            } catch (e) {
+              console.error("Failed to recover private analysis", e);
+              setErrorMsg(data.error || "Failed to retrieve analysis.");
+              setView("error");
             }
 
           } else {
@@ -75,7 +82,11 @@ function AppContent() {
             setView("result");
           }
         })
-        .catch(err => console.error("Failed to load share", err))
+        .catch(err => {
+          console.error("Failed to load share", err);
+          setErrorMsg("Network error loading shared result.");
+          setView("error");
+        })
         .finally(() => setLoading(false));
       return;
     }

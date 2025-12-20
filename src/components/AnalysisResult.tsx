@@ -5,6 +5,7 @@ import { AnalysisResult } from "@/lib/analyzer";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine, ReferenceArea } from "recharts";
 import { toPng, toBlob } from "html-to-image";
 import { useRef, useState, useEffect } from "react";
+import { Coffee } from "lucide-react";
 
 import { jsPDF } from "jspdf";
 
@@ -87,41 +88,42 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
             return;
         }
 
-        // 2. Generate new ID client-side immediately
-        const newId = uuidv4();
-        const url = `${window.location.origin}?id=${newId}`;
-
-        // 3. COPY SYNCHRONOUSLY (Fixes Safari)
-        setLinkCopied(true);
-        // We catch the promise but don't await it blocking the UI update for "Copied!"
-        navigator.clipboard.writeText(url).catch(console.error);
-        setTimeout(() => setLinkCopied(false), 2000);
-
-        // 4. Update State & LocalStorage immediately
-        setShareId(newId);
-        const saved = sessionStorage.getItem("vibe_check_result");
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            parsed.shareId = newId;
-            sessionStorage.setItem("vibe_check_result", JSON.stringify(parsed));
-        }
-
-        // 5. Save to Server in background
         setShareLoading(true);
-        try {
-            // Include sharesId in the stored object too
-            const payload = { ...result, shareId: newId };
 
-            await fetch(`/api/share?id=${newId}`, {
+        try {
+            // 2. Generate new ID
+            const newId = uuidv4();
+
+            // 3. Save to Server FIRST
+            const payload = { ...result, shareId: newId };
+            const res = await fetch(`/api/share?id=${newId}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
-            // We ignore the response ID since we defined it
+
+            if (!res.ok) {
+                throw new Error("Failed to save share data");
+            }
+
+            // 4. Update State & LocalStorage only after success
+            setShareId(newId);
+            const saved = sessionStorage.getItem("vibe_check_result");
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                parsed.shareId = newId;
+                sessionStorage.setItem("vibe_check_result", JSON.stringify(parsed));
+            }
+
+            // 5. Copy & visual feedback
+            const url = `${window.location.origin}?id=${newId}`;
+            await navigator.clipboard.writeText(url);
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 2000);
+
         } catch (error) {
-            console.error("Share failed to save to server", error);
-            // Ideally revert state here if critical, but for now we assume eventual consistency or retry
-            // In a real app we might show a toast "Failed to save link"
+            console.error("Share failed", error);
+            alert("Could not generate share link. Please try again.");
         } finally {
             setShareLoading(false);
         }
@@ -268,28 +270,37 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                 </button>
 
                 {!isSharedView && (
-                    <div className="flex gap-4 w-full md:w-auto">
+                    <div className="grid grid-cols-2 gap-3 w-full md:flex md:w-auto md:gap-4">
                         <button
                             onClick={handleShare}
                             disabled={shareLoading || linkCopied}
-                            className={`flex-1 md:flex-none ${linkCopied ? "bg-green-500 text-white" : "bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50"} px-6 py-3 md:py-2 rounded-full text-sm font-bold shadow-sm transition-all disabled:opacity-50`}
+                            className={`col-span-1 md:flex-none ${linkCopied ? "bg-green-500 text-white" : "bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50"} px-4 py-3 md:px-6 md:py-2 rounded-xl md:rounded-full text-xs md:text-sm font-bold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center`}
                         >
-                            {shareLoading ? "Creating..." : linkCopied ? "✓ Copied Link!" : "🔗 Copy Short Link"}
+                            {shareLoading ? "Creating..." : linkCopied ? "✓ Copied" : "🔗 Copy Link"}
                         </button>
                         <button
                             onClick={handleDownloadPDF}
                             disabled={isThinking}
-                            className="flex-1 md:flex-none bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50 px-6 py-3 md:py-2 rounded-full text-sm font-bold shadow-sm transition-all disabled:opacity-50"
+                            className="col-span-1 md:flex-none bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50 px-4 py-3 md:px-6 md:py-2 rounded-xl md:rounded-full text-xs md:text-sm font-bold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center"
                         >
-                            {isThinking ? "Thinking..." : "📄 PDF Report"}
+                            {isThinking ? "Thinking..." : "📄 PDF"}
                         </button>
                         <button
                             onClick={handleDownloadReceipt}
                             disabled={isThinking}
-                            className="flex-1 md:flex-none bg-black text-white px-6 py-3 md:py-2 rounded-full text-sm font-bold shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
+                            className="col-span-1 md:flex-none bg-black text-white px-4 py-3 md:px-6 md:py-2 rounded-xl md:rounded-full text-xs md:text-sm font-bold shadow-lg hover:scale-105 transition-transform disabled:opacity-50 flex items-center justify-center"
                         >
-                            {isThinking ? "Printing..." : "📸 Share Receipt"}
+                            {isThinking ? "Printing..." : "📸 Receipt"}
                         </button>
+                        <a
+                            href="https://buymeacoffee.com/techbymistake"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="col-span-1 md:flex-none bg-[#FFDD00] text-zinc-900 px-4 py-3 md:px-6 md:py-2 rounded-xl md:rounded-full text-xs md:text-sm font-bold shadow-sm hover:bg-[#ffea00] hover:scale-105 transition-transform flex items-center justify-center gap-2"
+                        >
+                            <Coffee className="w-4 h-4" />
+                            <span className="truncate">Buy Coffee</span>
+                        </a>
                     </div>
                 )}
             </div>
