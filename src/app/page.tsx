@@ -37,20 +37,21 @@ function AppContent() {
     // 1. Check for shared ID
     const id = searchParams.get("id");
     if (id) {
-        setLoading(true);
-        fetch(`/api/share?id=${id}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.error) {
-                    console.error("Share not found");
-                } else {
-                    setResult(data);
-                    setView("result");
-                }
-            })
-            .catch(err => console.error("Failed to load share", err))
-            .finally(() => setLoading(false));
-            return;
+      setLoading(true);
+      fetch(`/api/share?id=${id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            console.error("Share not found");
+          } else {
+            // Inject the current ID so AnalysisResult knows it's already shared
+            setResult({ ...data, shareId: id });
+            setView("result");
+          }
+        })
+        .catch(err => console.error("Failed to load share", err))
+        .finally(() => setLoading(false));
+      return;
     }
 
     // 2. Load saved result from localStorage (if no ID)
@@ -98,7 +99,7 @@ function AppContent() {
             className="min-h-screen pt-20 pb-10 flex items-center justify-center p-4"
           >
             <ChatInput
-              onBack={() => setView("landing")} 
+              onBack={() => setView("landing")}
               onShowInstructions={() => setView("instructions")}
               onAnalyze={async (text, apiKey) => {
                 setLoading(true);
@@ -141,7 +142,16 @@ function AppContent() {
             animate={{ opacity: 1 }}
             className="min-h-screen flex items-center justify-center"
           >
-            <AnalysisResultView result={result} onBack={handleBack} />
+            <AnalysisResultView
+              result={result}
+              isSharedView={!!searchParams.get("id")}
+              onBack={() => {
+                setView("input");
+                setResult(null);
+                // Clear URL param
+                window.history.replaceState(null, "", window.location.pathname);
+              }}
+            />
           </motion.div>
         )}
 

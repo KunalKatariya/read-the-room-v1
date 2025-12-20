@@ -13,9 +13,10 @@ import { v4 as uuidv4 } from "uuid";
 interface AnalysisResultViewProps {
     result: AnalysisResult;
     onBack: () => void;
+    isSharedView?: boolean;
 }
 
-export default function AnalysisResultView({ result, onBack }: AnalysisResultViewProps) {
+export default function AnalysisResultView({ result, onBack, isSharedView = false }: AnalysisResultViewProps) {
     const receiptRef = useRef<HTMLDivElement>(null);
     const pdfRef = useRef<HTMLDivElement>(null); // Ref for the visible UI
     const desktopPdfRef = useRef<HTMLDivElement>(null); // Ref for the hidden Desktop PDF template
@@ -179,29 +180,32 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
                 <button onClick={onBack} className="text-sm text-zinc-400 hover:text-zinc-900 transition-colors flex items-center gap-2 font-medium self-start md:self-auto">
                     ← Return to input
                 </button>
-                <div className="flex gap-4 w-full md:w-auto">
-                    <button
-                        onClick={handleShare}
-                        disabled={shareLoading}
-                        className="flex-1 md:flex-none bg-zinc-100 text-zinc-900 border border-zinc-200 px-6 py-2 rounded-full text-sm font-bold shadow-sm hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                        {shareLoading ? "Creating..." : linkCopied ? "✅ Copied!" : "🔗 Copy Short Link"}
-                    </button>
-                    <button
-                        onClick={handleDownloadPDF}
-                        disabled={isThinking}
-                        className="flex-1 md:flex-none bg-white text-zinc-900 border border-zinc-200 px-6 py-3 md:py-2 rounded-full text-sm font-bold shadow-sm hover:bg-zinc-50 transition-colors disabled:opacity-50"
-                    >
-                        {isThinking ? "Processing..." : "📄 PDF Report"}
-                    </button>
-                    <button
-                        onClick={handleDownloadReceipt}
-                        disabled={isThinking}
-                        className="flex-1 md:flex-none bg-black text-white px-6 py-3 md:py-2 rounded-full text-sm font-bold shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
-                    >
-                        {isThinking ? "Printing..." : "📸 Share Receipt"}
-                    </button>
-                </div>
+
+                {!isSharedView && (
+                    <div className="flex gap-4 w-full md:w-auto">
+                        <button
+                            onClick={handleShare}
+                            disabled={shareLoading || linkCopied}
+                            className={`flex-1 md:flex-none ${linkCopied ? "bg-green-500 text-white" : "bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50"} px-6 py-3 md:py-2 rounded-full text-sm font-bold shadow-sm transition-all disabled:opacity-50`}
+                        >
+                            {shareLoading ? "Creating..." : linkCopied ? "✓ Copied Link!" : "🔗 Copy Short Link"}
+                        </button>
+                        <button
+                            onClick={handleDownloadPDF}
+                            disabled={isThinking}
+                            className="flex-1 md:flex-none bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50 px-6 py-3 md:py-2 rounded-full text-sm font-bold shadow-sm transition-all disabled:opacity-50"
+                        >
+                            {isThinking ? "Thinking..." : "📄 PDF Report"}
+                        </button>
+                        <button
+                            onClick={handleDownloadReceipt}
+                            disabled={isThinking}
+                            className="flex-1 md:flex-none bg-black text-white px-6 py-3 md:py-2 rounded-full text-sm font-bold shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
+                        >
+                            {isThinking ? "Printing..." : "📸 Share Receipt"}
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Main Content Wrapper for PDF Capture */}
