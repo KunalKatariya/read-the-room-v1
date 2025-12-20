@@ -28,8 +28,8 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
     const [shareLoading, setShareLoading] = useState(false);
 
     // PREMIUM LOCK STATE
-    // If it's a shared view, it's already "paid for"/unlocked. Otherwise, default to locked.
-    const [isLocked, setIsLocked] = useState(!isSharedView);
+    // DEFAULT TO FALSE (FREE MODE) - User requested to disable payments
+    const [isLocked, setIsLocked] = useState(false);
 
     // Generate a simple signature for this specific analysis content
     // We use roast + movieAnalogy as a pseudo-unique ID for local persistence
@@ -37,33 +37,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
 
     // Check for prior unlock in localStorage using the signature
     useEffect(() => {
-        if (!isSharedView) {
-            try {
-                // 1. Local Persistence Check
-                const unlockedSignatures = JSON.parse(localStorage.getItem('vibe_check_unlocked_items') || '[]');
-                if (unlockedSignatures.includes(contentSignature)) {
-                    setIsLocked(false);
-                    return;
-                }
-
-                // 2. Server Check (if redirected from Stripe)
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get('payment') === 'success') {
-                    // Mark as unlocked locally immediately for UX
-                    setIsLocked(false);
-                    const currentUnlocks = JSON.parse(localStorage.getItem('vibe_check_unlocked_items') || '[]');
-                    if (!currentUnlocks.includes(contentSignature)) {
-                        currentUnlocks.push(contentSignature);
-                        localStorage.setItem('vibe_check_unlocked_items', JSON.stringify(currentUnlocks));
-                    }
-                    // Clean URL
-                    const newUrl = window.location.pathname + (result.shareId ? `?id=${result.shareId}` : '');
-                    window.history.replaceState(null, '', newUrl);
-                }
-            } catch (e) {
-                // Ignore parse errors
-            }
-        }
+        // FREE MODE: No logic needed here for now.
     }, [isSharedView, contentSignature, result.shareId]);
 
     const handleUnlock = async () => {
