@@ -72,6 +72,12 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
             return;
         }
 
+        const aid = result.analysisId;
+        if (!aid) {
+            alert("This analysis is too old to unlock. Please click 'Back' and analyze it again to generate a new ID.");
+            return;
+        }
+
         // Optimistic UI or Loading State here
         // For now, simple redirect
         try {
@@ -79,7 +85,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    analysisId: (result as any).analysisId // Sent from Server Action
+                    analysisId: aid
                 })
             });
             const data = await res.json();

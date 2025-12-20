@@ -4,6 +4,7 @@ export interface AnalysisResult {
     vibeHeadline: string;
     confidence: number;
     shareId?: string;
+    analysisId?: string; // UUID for payment tracking
     stats: {
         totalMessages: number;
         youCount: number;
