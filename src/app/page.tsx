@@ -13,9 +13,14 @@ import { useSearchParams } from "next/navigation";
 
 function AppContent() {
   const searchParams = useSearchParams();
-  const [view, setView] = useState<"landing" | "input" | "result" | "error" | "instructions">("landing");
+  // Check if we have an ID immediately to prevent flash of landing page
+  const hasIdParam = searchParams.has("id");
+
+  const [view, setView] = useState<"landing" | "input" | "result" | "error" | "instructions">(
+    hasIdParam ? "result" : "landing" // Optimistically set to result (or loading) to hide hero
+  );
   const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(hasIdParam); // Start loading if ID exists
   const [errorMsg, setErrorMsg] = useState("");
 
   const startAnalysis = () => {
@@ -103,7 +108,7 @@ function AppContent() {
   return (
     <main className="min-h-screen bg-background relative selection:bg-zinc-200 text-foreground font-sans">
       <AnimatePresence mode="wait">
-        {view === "landing" && (
+        {view === "landing" && !loading && (
           <LandingHero key="hero" onStart={startAnalysis} />
         )}
 

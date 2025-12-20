@@ -3,6 +3,19 @@
 import { analyzeChatWithGemini } from '@/lib/analyzer';
 import { kv } from '@vercel/kv';
 import { v4 as uuidv4 } from 'uuid';
+import { headers } from 'next/headers';
+import { getPricingForCountry } from '@/lib/pricing';
+
+export async function getPricingAction() {
+    const headersList = await headers();
+    const country = headersList.get("x-vercel-ip-country") || "US"; // Default to US if local/unknown
+
+    // If running locally, "country" might be null.
+    // We can simulate other countries here for testing if we want.
+    // const country = "IN"; 
+
+    return getPricingForCountry(country);
+}
 
 export async function analyzeChatAction(text: string) {
     const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || ""; // Should ideally be server-side var
