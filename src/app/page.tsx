@@ -6,7 +6,8 @@ import ChatInput from "@/components/ChatInput";
 import AnalysisResultView from "@/components/AnalysisResult";
 import ErrorView from "@/components/ErrorView";
 import ExportInstructions from "@/components/ExportInstructions";
-import { analyzeChatWithGemini, type AnalysisResult } from "@/lib/analyzer";
+import { analyzeChatAction } from "./actions";
+import { type AnalysisResult } from "@/lib/analyzer";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 
@@ -104,7 +105,8 @@ function AppContent() {
               onAnalyze={async (text, apiKey) => {
                 setLoading(true);
                 try {
-                  const res = await analyzeChatWithGemini(text, apiKey);
+                  // Call Server Action directly
+                  const res = await analyzeChatAction(text);
 
                   if (res.roast.startsWith("Internal Error:")) {
                     setErrorMsg(res.roast.replace("Internal Error:", "").trim());

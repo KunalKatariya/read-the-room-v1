@@ -4,11 +4,13 @@ import { motion } from "framer-motion";
 import { AnalysisResult } from "@/lib/analyzer";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from "recharts";
 import { toPng, toBlob } from "html-to-image";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 
 import { jsPDF } from "jspdf";
 
 import { v4 as uuidv4 } from "uuid";
+
+import PremiumGate from "./PremiumGate";
 
 interface AnalysisResultViewProps {
     result: AnalysisResult;
@@ -24,6 +26,74 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
     const [isThinking, setIsThinking] = useState(false);
     const [linkCopied, setLinkCopied] = useState(false);
     const [shareLoading, setShareLoading] = useState(false);
+
+    // PREMIUM LOCK STATE
+    // If it's a shared view, it's already "paid for"/unlocked. Otherwise, default to locked.
+    const [isLocked, setIsLocked] = useState(!isSharedView);
+
+    // Generate a simple signature for this specific analysis content
+    // We use roast + movieAnalogy as a pseudo-unique ID for local persistence
+    const contentSignature = useRef(`${result.roast.substring(0, 20)}_${result.movieAnalogy.substring(0, 20)}`).current;
+
+    // Check for prior unlock in localStorage using the signature
+    useEffect(() => {
+        if (!isSharedView) {
+            try {
+                // 1. Local Persistence Check
+                const unlockedSignatures = JSON.parse(localStorage.getItem('vibe_check_unlocked_items') || '[]');
+                if (unlockedSignatures.includes(contentSignature)) {
+                    setIsLocked(false);
+                    return;
+                }
+
+                // 2. Server Check (if redirected from Stripe)
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('payment') === 'success') {
+                    // Mark as unlocked locally immediately for UX
+                    setIsLocked(false);
+                    const currentUnlocks = JSON.parse(localStorage.getItem('vibe_check_unlocked_items') || '[]');
+                    if (!currentUnlocks.includes(contentSignature)) {
+                        currentUnlocks.push(contentSignature);
+                        localStorage.setItem('vibe_check_unlocked_items', JSON.stringify(currentUnlocks));
+                    }
+                    // Clean URL
+                    const newUrl = window.location.pathname + (result.shareId ? `?id=${result.shareId}` : '');
+                    window.history.replaceState(null, '', newUrl);
+                }
+            } catch (e) {
+                // Ignore parse errors
+            }
+        }
+    }, [isSharedView, contentSignature, result.shareId]);
+
+    const handleUnlock = async () => {
+        if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+            alert("Payment system not configured (Missing Key).");
+            return;
+        }
+
+        // Optimistic UI or Loading State here
+        // For now, simple redirect
+        try {
+            const res = await fetch('/api/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    analysisId: (result as any).analysisId // Sent from Server Action
+                })
+            });
+            const data = await res.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                alert("Failed to start checkout. " + (data.error || ""));
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Checkout error.");
+        }
+    };
+
     // Initialize shareId from the result prop if it exists (for restored sessions)
     const [shareId, setShareId] = useState<string | null>(result.shareId || null);
 
@@ -355,184 +425,196 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                     )}
                 </motion.div>
 
-                {/* Insight Cards */}
-                <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 mb-12 md:mb-16">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 }}
-                            className="p-6 md:p-8 rounded-[2rem] bg-red-500 text-white shadow-xl shadow-red-200/50"
-                        >
-                            <h3 className="text-red-100 font-bold mb-6 text-sm uppercase tracking-widest flex items-center gap-2 border-b border-white/20 pb-4">
-                                🚩 Red Flags detected
-                            </h3>
-                            <ul className="space-y-4">
-                                {result.redFlags.map((flag, i) => (
-                                    <li key={i} className="leading-snug font-medium text-lg border-l-2 border-white/40 pl-6 py-1">
-                                        {flag.replace(/^[^\w]+/, '')}
-                                    </li>
-                                ))}
-                            </ul>
-                        </motion.div>
+                {/* ==================== PREMIUM TIER (LOCKED) ==================== */}
+                <div className="relative">
+                    {/* Lock Overlay */}
+                    {isLocked && (
+                        <PremiumGate onUnlock={handleUnlock} />
+                    )}
 
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.5 }}
-                            className="p-6 md:p-8 rounded-[2rem] bg-emerald-500 text-white shadow-xl shadow-emerald-200/50"
-                        >
-                            <h3 className="text-emerald-100 font-bold mb-6 text-sm uppercase tracking-widest flex items-center gap-2 border-b border-white/20 pb-4">
-                                ✅ Green Flags
-                            </h3>
-                            <ul className="space-y-4">
-                                {result.greenFlags.length > 0 ? (
-                                    result.greenFlags.map((flag, i) => (
-                                        <li key={i} className="leading-snug font-medium text-lg border-l-2 border-white/40 pl-6 py-1">
-                                            {flag.replace(/^[^\w]+/, '')}
-                                        </li>
-                                    ))
-                                ) : (
-                                    <li className="leading-snug font-medium text-lg border-l-2 border-white/40 pl-6 py-1 italic opacity-80">
-                                        Absolutely none, darling
-                                    </li>
-                                )}
-                            </ul>
-                        </motion.div>
-                    </div>
+                    {/* BLUR CONTAINER - Applies blur if locked */}
+                    <div className={isLocked ? "filter blur-lg pointer-events-none select-none" : ""}>
 
-                    {/* Insight Cards Grid - Main UI */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12 max-w-4xl mx-auto">
-                        <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-100">
-                            <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-2">Effort Balance</h3>
-                            <p className="text-lg font-bold text-zinc-800 leading-tight">
-                                {result.effortBalance}
-                            </p>
-                        </div>
-                        <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-100">
-                            <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-2">Reply Time</h3>
-                            <p className="text-lg font-bold text-zinc-800 leading-tight">
-                                {result.stats.replyTimeGap}
-                            </p>
-                        </div>
-                    </div>
+                        {/* Insight Cards */}
+                        <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 mb-12 md:mb-16">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.4 }}
+                                    className="p-6 md:p-8 rounded-[2rem] bg-red-500 text-white shadow-xl shadow-red-200/50"
+                                >
+                                    <h3 className="text-red-100 font-bold mb-6 text-sm uppercase tracking-widest flex items-center gap-2 border-b border-white/20 pb-4">
+                                        🚩 Red Flags detected
+                                    </h3>
+                                    <ul className="space-y-4">
+                                        {result.redFlags.map((flag, i) => (
+                                            <li key={i} className="leading-snug font-medium text-lg border-l-2 border-white/40 pl-6 py-1">
+                                                {flag.replace(/^[^\w]+/, '')}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </motion.div>
 
-                    {/* RPG Character Cards - Main UI */}
-                    <div className="mb-16 max-w-4xl mx-auto">
-                        <h3 className="text-center text-sm font-bold uppercase tracking-[0.2em] text-zinc-400 mb-8">
-                            Character Sheets
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {safeRpgCards.map((card, idx) => (
-                                <div key={idx} className="relative overflow-hidden bg-white border-2 border-zinc-900 rounded-xl p-6 shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] transition-all">
-                                    <div className="absolute top-0 right-0 p-2 bg-zinc-900 text-white text-xs font-bold rounded-bl-xl z-20">
-                                        LVL {card.level || 99}
-                                    </div>
-                                    <div className="mb-6">
-                                        <h4 className="text-2xl font-black text-zinc-900 mb-1">{card.name}</h4>
-                                        <div className="inline-block px-3 py-1 bg-zinc-100 text-zinc-600 text-xs font-bold uppercase tracking-wide rounded-full border border-zinc-200">
-                                            {card.role}
-                                        </div>
-                                    </div>
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.5 }}
+                                    className="p-6 md:p-8 rounded-[2rem] bg-emerald-500 text-white shadow-xl shadow-emerald-200/50"
+                                >
+                                    <h3 className="text-emerald-100 font-bold mb-6 text-sm uppercase tracking-widest flex items-center gap-2 border-b border-white/20 pb-4">
+                                        ✅ Green Flags
+                                    </h3>
+                                    <ul className="space-y-4">
+                                        {result.greenFlags.length > 0 ? (
+                                            result.greenFlags.map((flag, i) => (
+                                                <li key={i} className="leading-snug font-medium text-lg border-l-2 border-white/40 pl-6 py-1">
+                                                    {flag.replace(/^[^\w]+/, '')}
+                                                </li>
+                                            ))
+                                        ) : (
+                                            <li className="leading-snug font-medium text-lg border-l-2 border-white/40 pl-6 py-1 italic opacity-80">
+                                                Absolutely none, darling
+                                            </li>
+                                        )}
+                                    </ul>
+                                </motion.div>
+                            </div>
 
-                                    <div className="space-y-4 mb-6">
-                                        <div>
-                                            <div className="flex justify-between text-xs font-bold uppercase mb-1">
-                                                <span>Yap Level</span>
-                                                <span>{card.stats.yapLevel}/100</span>
-                                            </div>
-                                            <div className="h-2 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200">
-                                                <div
-                                                    className="h-full bg-blue-500"
-                                                    style={{ width: `${card.stats.yapLevel}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="flex justify-between text-xs font-bold uppercase mb-1">
-                                                <span>Simp Score</span>
-                                                <span>{card.stats.simpScore}/100</span>
-                                            </div>
-                                            <div className="h-2 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200">
-                                                <div
-                                                    className="h-full bg-pink-500"
-                                                    style={{ width: `${card.stats.simpScore}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <div className="flex justify-between text-xs font-bold uppercase mb-1">
-                                                <span>Chaos</span>
-                                                <span>{card.stats.chaosMeasure}/100</span>
-                                            </div>
-                                            <div className="h-2 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200">
-                                                <div
-                                                    className="h-full bg-purple-500"
-                                                    style={{ width: `${card.stats.chaosMeasure}%` }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <p className="text-sm font-medium text-zinc-600 italic border-l-4 border-zinc-200 pl-4 py-1">
-                                        "{card.oneLiner}"
+                            {/* Insight Cards Grid - Main UI */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12 max-w-4xl mx-auto">
+                                <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-100">
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-2">Effort Balance</h3>
+                                    <p className="text-lg font-bold text-zinc-800 leading-tight">
+                                        {result.effortBalance}
                                     </p>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6 }}
-                        className="w-full bg-zinc-900 text-white rounded-[2rem] p-6 md:p-10 flex flex-col md:flex-row justify-between items-center gap-8 shadow-2xl shadow-zinc-200/50"
-                    >
-                        <div className="text-center md:text-left">
-                            <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">🔮 Attachment Style</h3>
-                            <div className="text-3xl md:text-4xl font-black leading-tight mb-2 tracking-tight">{result.attachmentStyle}</div>
-                        </div>
-                        <div className="w-full h-px bg-zinc-800 md:w-px md:h-16" />
-                        <div className="text-center md:text-right">
-                            <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">🎬 If it were a movie</h3>
-                            <span className="text-lg md:text-2xl font-serif italic text-zinc-200">"{result.movieAnalogy}"</span>
-                        </div>
-                    </motion.div>
-                </div>
-
-                {/* Relationship Soundtrack */}
-                <div className="mb-16 max-w-4xl mx-auto">
-                    <h3 className="text-center text-sm font-bold uppercase tracking-[0.2em] text-zinc-400 mb-8">
-                        The Relationship Soundtrack
-                    </h3>
-                    <div className="bg-zinc-900 rounded-[2rem] p-8 text-white shadow-xl shadow-zinc-200/50">
-                        <div className="space-y-6">
-                            {(result.songRecommendations || [
-                                { title: "Toxic", artist: "Britney Spears", reason: "Do we need to explain?" },
-                                { title: "Hot N Cold", artist: "Katy Perry", reason: "Mixed signals slightly detected." },
-                                { title: "We Are Never Ever Getting Back Together", artist: "Taylor Swift", reason: "Just a hunch." }
-                            ]).map((song, i) => (
-                                <div key={i} className="flex items-center gap-4 group">
-                                    <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center font-bold text-zinc-500 group-hover:bg-zinc-700 group-hover:text-white transition-colors">
-                                        {i + 1}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex flex-col md:flex-row md:items-baseline md:gap-2">
-                                            <h4 className="font-bold text-lg truncate">{song.title}</h4>
-                                            <span className="text-zinc-500 text-sm font-medium">{song.artist}</span>
-                                        </div>
-                                        <p className="text-sm text-zinc-400 italic truncate mt-0.5">"{song.reason}"</p>
-                                    </div>
-                                    <a
-                                        href={`https://open.spotify.com/search/${encodeURIComponent(song.title + " " + song.artist)}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="p-3 bg-zinc-800 rounded-full hover:bg-[#1DB954] hover:text-white transition-all transform hover:scale-110"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
-                                    </a>
+                                <div className="bg-zinc-50 p-6 rounded-2xl border border-zinc-100">
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-zinc-400 mb-2">Reply Time</h3>
+                                    <p className="text-lg font-bold text-zinc-800 leading-tight">
+                                        {result.stats.replyTimeGap}
+                                    </p>
                                 </div>
-                            ))}
+                            </div>
+
+                            {/* RPG Character Cards - Main UI */}
+                            <div className="mb-16 max-w-4xl mx-auto">
+                                <h3 className="text-center text-sm font-bold uppercase tracking-[0.2em] text-zinc-400 mb-8">
+                                    Character Sheets
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {safeRpgCards.map((card, idx) => (
+                                        <div key={idx} className="relative overflow-hidden bg-white border-2 border-zinc-900 rounded-xl p-6 shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] transition-all">
+                                            <div className="absolute top-0 right-0 p-2 bg-zinc-900 text-white text-xs font-bold rounded-bl-xl z-20">
+                                                LVL {card.level || 99}
+                                            </div>
+                                            <div className="mb-6">
+                                                <h4 className="text-2xl font-black text-zinc-900 mb-1">{card.name}</h4>
+                                                <div className="inline-block px-3 py-1 bg-zinc-100 text-zinc-600 text-xs font-bold uppercase tracking-wide rounded-full border border-zinc-200">
+                                                    {card.role}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4 mb-6">
+                                                <div>
+                                                    <div className="flex justify-between text-xs font-bold uppercase mb-1">
+                                                        <span>Yap Level</span>
+                                                        <span>{card.stats.yapLevel}/100</span>
+                                                    </div>
+                                                    <div className="h-2 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200">
+                                                        <div
+                                                            className="h-full bg-blue-500"
+                                                            style={{ width: `${card.stats.yapLevel}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="flex justify-between text-xs font-bold uppercase mb-1">
+                                                        <span>Simp Score</span>
+                                                        <span>{card.stats.simpScore}/100</span>
+                                                    </div>
+                                                    <div className="h-2 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200">
+                                                        <div
+                                                            className="h-full bg-pink-500"
+                                                            style={{ width: `${card.stats.simpScore}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="flex justify-between text-xs font-bold uppercase mb-1">
+                                                        <span>Chaos</span>
+                                                        <span>{card.stats.chaosMeasure}/100</span>
+                                                    </div>
+                                                    <div className="h-2 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200">
+                                                        <div
+                                                            className="h-full bg-purple-500"
+                                                            style={{ width: `${card.stats.chaosMeasure}%` }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <p className="text-sm font-medium text-zinc-600 italic border-l-4 border-zinc-200 pl-4 py-1">
+                                                "{card.oneLiner}"
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.6 }}
+                                className="w-full bg-zinc-900 text-white rounded-[2rem] p-6 md:p-10 flex flex-col md:flex-row justify-between items-center gap-8 shadow-2xl shadow-zinc-200/50"
+                            >
+                                <div className="text-center md:text-left">
+                                    <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">🔮 Attachment Style</h3>
+                                    <div className="text-3xl md:text-4xl font-black leading-tight mb-2 tracking-tight">{result.attachmentStyle}</div>
+                                </div>
+                                <div className="w-full h-px bg-zinc-800 md:w-px md:h-16" />
+                                <div className="text-center md:text-right">
+                                    <h3 className="text-zinc-500 text-xs font-bold uppercase tracking-widest mb-4">🎬 If it were a movie</h3>
+                                    <span className="text-lg md:text-2xl font-serif italic text-zinc-200">"{result.movieAnalogy}"</span>
+                                </div>
+                            </motion.div>
+                        </div>
+
+                        {/* Relationship Soundtrack */}
+                        <div className="mb-16 max-w-4xl mx-auto">
+                            <h3 className="text-center text-sm font-bold uppercase tracking-[0.2em] text-zinc-400 mb-8">
+                                The Relationship Soundtrack
+                            </h3>
+                            <div className="bg-zinc-900 rounded-[2rem] p-8 text-white shadow-xl shadow-zinc-200/50">
+                                <div className="space-y-6">
+                                    {(result.songRecommendations || [
+                                        { title: "Toxic", artist: "Britney Spears", reason: "Do we need to explain?" },
+                                        { title: "Hot N Cold", artist: "Katy Perry", reason: "Mixed signals slightly detected." },
+                                        { title: "We Are Never Ever Getting Back Together", artist: "Taylor Swift", reason: "Just a hunch." }
+                                    ]).map((song, i) => (
+                                        <div key={i} className="flex items-center gap-4 group">
+                                            <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center font-bold text-zinc-500 group-hover:bg-zinc-700 group-hover:text-white transition-colors">
+                                                {i + 1}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex flex-col md:flex-row md:items-baseline md:gap-2">
+                                                    <h4 className="font-bold text-lg truncate">{song.title}</h4>
+                                                    <span className="text-zinc-500 text-sm font-medium">{song.artist}</span>
+                                                </div>
+                                                <p className="text-sm text-zinc-400 italic truncate mt-0.5">"{song.reason}"</p>
+                                            </div>
+                                            <a
+                                                href={`https://open.spotify.com/search/${encodeURIComponent(song.title + " " + song.artist)}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="p-3 bg-zinc-800 rounded-full hover:bg-[#1DB954] hover:text-white transition-all transform hover:scale-110"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="16" r="3"></circle></svg>
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
