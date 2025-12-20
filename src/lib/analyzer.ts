@@ -104,8 +104,8 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
         "greenFlags": ["✅ flag 1", "✅ flag 2"],
         "greenFlagOverview": "A short, punchy sentence summarizing the overall green flag energy. Max 12 words.",
         "effortBalance": "A verdict on who is trying harder (e.g. 'You are carrying 🎒')",
-        "movieAnalogy": "If this chat was a movie, what would it be? (Max 1 sentence) 🎬",
-        "attachmentStyle": "A specific, funny Gen-z label for their attachment style (e.g. 'Stage 5 Clinger', 'Avoidant Ghost', 'Golden Retriever Energy', 'Toxic Situationship'). Be creative! 🔮",
+        "movieAnalogy": "If this chat was a movie, what would it be? (Max 1 sentence). IMPORTANT: Do NOT just say 'The Notebook' or 'When Harry Met Sally'. Be creative! Use Bollywood, Hollywood, Indie films, obscure 90s rom-coms, horror movies, etc. 🎬",
+        "attachmentStyle": "A specific, funny Gen-z label for their attachment style. Do NOT reuse common ones like 'Stage 5 Clinger'. Be extremely specific and roasted. Examples: 'Recovering People Pleaser', 'Text-Bombardment Specialist', 'Emotional Hit-and-Run Driver', 'Situationship Veteran', etc. 🔮",
         "replyTimeGap": "E.g. 'You reply fast, they hibernate 😴'",
         "turningPoint": {
            "message": "Quote the message where vibes changed",
