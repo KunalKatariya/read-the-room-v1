@@ -23,6 +23,8 @@ function AppContent() {
   const [loading, setLoading] = useState(hasIdParam); // Start loading if ID exists
   const [errorMsg, setErrorMsg] = useState("");
 
+  const [isPublicShare, setIsPublicShare] = useState(false);
+
   const startAnalysis = () => {
     setView("input");
   };
@@ -58,6 +60,7 @@ function AppContent() {
 
             if (privateResult) {
               setResult(privateResult);
+              setIsPublicShare(false); // Explicitly private/locked
               setView("result");
               // If payment=success, we rely on AnalysisResult's internal logic to unlock
             } else {
@@ -68,6 +71,7 @@ function AppContent() {
           } else {
             // Inject the current ID so AnalysisResult knows it's already shared
             setResult({ ...data, shareId: id });
+            setIsPublicShare(true); // Explicitly public/unlocked
             setView("result");
           }
         })
@@ -167,7 +171,7 @@ function AppContent() {
           >
             <AnalysisResultView
               result={result}
-              isSharedView={!!searchParams.get("id")}
+              isSharedView={isPublicShare}
               onBack={() => {
                 setView("input");
                 setResult(null);

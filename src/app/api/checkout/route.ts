@@ -21,11 +21,20 @@ export async function POST(req: NextRequest) {
         const ipCountry = req.headers.get("x-vercel-ip-country") || "US";
         const pricing = getPricingForCountry(ipCountry);
 
+        // Manually define payment methods based on country to avoid API usage errors
+        // Wallets (Google/Apple Pay) are included in 'card' automatically in Checkout
+        let paymentMethods = ["card"];
+
+        // Add specific local methods if safe and requested
+        if (ipCountry === "NL") paymentMethods.push("ideal");
+        if (ipCountry === "DE") paymentMethods.push("giropay");
+        if (ipCountry === "JP") paymentMethods.push("paypay");
+        // Note: UPI for India often requires specific handling, keeping 'card' is safest for now
+        // as functionality is prioritized over variety until API issue is resolved.
+
         // Create Checkout Session
         const session = await stripe.checkout.sessions.create({
-            automatic_payment_methods: {
-                enabled: true,
-            },
+            payment_method_types: paymentMethods as any,
             line_items: [
                 {
                     price_data: {
@@ -47,7 +56,7 @@ export async function POST(req: NextRequest) {
 
             success_url: `${req.headers.get("origin")}/?id=${analysisId}&payment=success`,
             cancel_url: `${req.headers.get("origin")}/?id=${analysisId}&payment=cancelled`,
-        } as any);
+        });
 
         return NextResponse.json({ url: session.url });
     } catch (error: any) {
