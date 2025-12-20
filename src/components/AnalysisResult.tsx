@@ -647,7 +647,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                                     )}
                                                 </div>
                                                 {/* Mobile Hint */}
-                                                <p className="text-[10px] text-zinc-600 font-bold uppercase mt-1 md:hidden opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <p className="text-[10px] text-zinc-600 font-bold uppercase mt-1 md:hidden opacity-100 transition-opacity">
                                                     {expandedSong === i ? "Show less" : "Tap to expand"}
                                                 </p>
                                             </div>
