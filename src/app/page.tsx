@@ -35,15 +35,31 @@ function AppContent() {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
 
   useEffect(() => {
-    // 1. Check for shared ID
+    // 1. Check for shared ID OR Analysis ID (from payment redirect)
     const id = searchParams.get("id");
+
     if (id) {
       setLoading(true);
+
+      // Try fetching as a SHARE first (public)
       fetch(`/api/share?id=${id}`)
         .then(res => res.json())
-        .then(data => {
-          if (data.error) {
-            console.error("Share not found");
+        .then(async data => {
+          if (data.error || !data.roast) {
+            // Not a share ID? Maybe it's an Analysis ID (from payment redirect)
+            // Dynamically import Server Action to fetch private analysis
+            const { getAnalysisAction } = await import("./actions");
+            const privateResult = await getAnalysisAction(id);
+
+            if (privateResult) {
+              setResult(privateResult);
+              setView("result");
+              // If payment=success, we rely on AnalysisResult's internal logic to unlock
+            } else {
+              console.error("Analysis not found");
+              setView("landing"); // Or error
+            }
+
           } else {
             // Inject the current ID so AnalysisResult knows it's already shared
             setResult({ ...data, shareId: id });
