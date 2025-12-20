@@ -80,8 +80,8 @@ function AppContent() {
       return;
     }
 
-    // 2. Load saved result from localStorage (if no ID)
-    const savedResult = localStorage.getItem("vibe_check_result");
+    // 2. Load saved result from sessionStorage (survives refresh, clears on close)
+    const savedResult = sessionStorage.getItem("vibe_check_result");
     if (savedResult) {
       try {
         const parsed = JSON.parse(savedResult);
@@ -89,7 +89,7 @@ function AppContent() {
         setView("result");
       } catch (e) {
         console.error("Failed to parse saved result", e);
-        localStorage.removeItem("vibe_check_result");
+        sessionStorage.removeItem("vibe_check_result");
       }
     }
   }, [searchParams]);
@@ -104,7 +104,7 @@ function AppContent() {
   }, [loading]);
 
   const handleBack = () => {
-    localStorage.removeItem("vibe_check_result");
+    sessionStorage.removeItem("vibe_check_result");
     setResult(null);
     setView("landing");
   };
@@ -138,7 +138,7 @@ function AppContent() {
                     setView("error");
                   } else {
                     setResult(res);
-                    localStorage.setItem("vibe_check_result", JSON.stringify(res));
+                    sessionStorage.setItem("vibe_check_result", JSON.stringify(res));
                     setView("result");
                   }
                 } catch (e: any) {

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { AnalysisResult } from "@/lib/analyzer";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine, ReferenceArea } from "recharts";
 import { toPng, toBlob } from "html-to-image";
 import { useRef, useState, useEffect } from "react";
 
@@ -99,11 +99,11 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
 
         // 4. Update State & LocalStorage immediately
         setShareId(newId);
-        const saved = localStorage.getItem("vibe_check_result");
+        const saved = sessionStorage.getItem("vibe_check_result");
         if (saved) {
             const parsed = JSON.parse(saved);
             parsed.shareId = newId;
-            localStorage.setItem("vibe_check_result", JSON.stringify(parsed));
+            sessionStorage.setItem("vibe_check_result", JSON.stringify(parsed));
         }
 
         // 5. Save to Server in background
@@ -217,6 +217,28 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
         return null;
     };
 
+    const CustomEmojiDot = (props: any) => {
+        const { cx, cy, payload } = props;
+        const score = payload.score;
+        let emoji = "😐";
+        if (score >= 90) emoji = "😍";
+        else if (score >= 75) emoji = "🥰";
+        else if (score >= 60) emoji = "😏";
+        else if (score >= 40) emoji = "😐";
+        else if (score >= 20) emoji = "🙄";
+        else emoji = "💀";
+
+        // Only show emoji if it's a significant point to reduce clutter? 
+        // Showing all for now as "Rollercoaster" implies detail.
+        return (
+            <svg x={cx - 10} y={cy - 10} width={20} height={20}>
+                <text x="50%" y="50%" dy=".3em" textAnchor="middle" fontSize="16">
+                    {emoji}
+                </text>
+            </svg>
+        );
+    };
+
     const COLORS = ["#18181b", "#e4e4e7"];
 
     const safeRpgCards = (result.rpgCards && result.rpgCards.length > 0) ? result.rpgCards : [
@@ -224,9 +246,23 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
         { name: result.chartData.dominance[1]?.name || "Player 2", role: "The Unknown Player", level: 1, oneLiner: "Stats loading... (Run a new analysis!)", stats: { yapLevel: 50, simpScore: 50, cringeFactor: 50, chaosMeasure: 50 } }
     ];
 
+    const [expandedSong, setExpandedSong] = useState<number | null>(null);
+
+    const toggleSong = (index: number) => {
+        setExpandedSong(expandedSong === index ? null : index);
+    };
+
     return (
         <div className="w-full max-w-5xl mx-auto px-4 py-8 md:px-6 md:py-16 pb-32">
+            {/* ... navigation header ... */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8 md:mb-12">
+                {/* existing header content remains unchanged, just ensuring we are in the right scope if possible, 
+                   but actually I should just target the roast paragraph to insert the button, 
+                   and the top of the component to insert the state/logic. 
+                   I will split this into two `replace_file_content` or use `multi_replace` if safe.
+                   Let's use `multi_replace` for atomic update.
+               */}
+
                 <button onClick={onBack} className="text-sm text-zinc-400 hover:text-zinc-900 transition-colors flex items-center gap-2 font-medium self-start md:self-auto">
                     ← Return to input
                 </button>
@@ -279,7 +315,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                     <h1 className="text-3xl md:text-6xl font-bold mb-6 tracking-tight text-zinc-900 leading-tight">
                         {result.vibeHeadline}
                     </h1>
-                    <p className="text-lg md:text-2xl font-light text-zinc-500 max-w-3xl mx-auto italic leading-relaxed">
+                    <p className="text-lg md:text-2xl font-light text-zinc-500 max-w-3xl mx-auto italic leading-relaxed mb-8">
                         "{result.roast}"
                     </p>
                 </motion.div>
@@ -377,14 +413,21 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                 <XAxis dataKey="messageIndex" hide />
                                 <YAxis domain={[0, 100]} hide />
                                 <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#e4e4e7', strokeWidth: 2 }} />
+
+                                {/* Fun Zones */}
+                                <ReferenceArea y1={80} y2={100} fill="#dcfce7" fillOpacity={0.3} label={{ value: "SIMP ZONE", position: "insideTopRight", fill: "#15803d", fontSize: 10, fontWeight: "bold" }} />
+                                <ReferenceArea y1={0} y2={20} fill="#fee2e2" fillOpacity={0.3} label={{ value: "TOXIC WASTE", position: "insideBottomRight", fill: "#b91c1c", fontSize: 10, fontWeight: "bold" }} />
+
                                 <ReferenceLine y={50} stroke="#e4e4e7" strokeDasharray="5 5" />
+
                                 <Line
                                     type="monotone"
                                     dataKey="score"
                                     stroke="#18181b"
                                     strokeWidth={3}
-                                    dot={false}
+                                    dot={<CustomEmojiDot />}
                                     activeDot={{ r: 6, fill: "#18181b", stroke: "#fff", strokeWidth: 2 }}
+                                    isAnimationActive={true}
                                 />
                             </LineChart>
                         </ResponsiveContainer>
@@ -576,12 +619,26 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                             <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center font-bold text-zinc-500 group-hover:bg-zinc-700 group-hover:text-white transition-colors">
                                                 {i + 1}
                                             </div>
-                                            <div className="flex-1 min-w-0">
+                                            <div
+                                                className="flex-1 min-w-0 cursor-pointer"
+                                                onClick={() => toggleSong(i)}
+                                            >
                                                 <div className="flex flex-col md:flex-row md:items-baseline md:gap-2">
                                                     <h4 className="font-bold text-lg truncate">{song.title}</h4>
                                                     <span className="text-zinc-500 text-sm font-medium">{song.artist}</span>
                                                 </div>
-                                                <p className="text-sm text-zinc-400 italic truncate mt-0.5">"{song.reason}"</p>
+                                                <div className="relative">
+                                                    <p className={`text-sm text-zinc-400 italic mt-0.5 transition-all ${expandedSong === i ? "whitespace-normal" : "truncate"}`}>
+                                                        "{song.reason}"
+                                                    </p>
+                                                    {expandedSong !== i && (
+                                                        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-zinc-900 to-transparent md:hidden" />
+                                                    )}
+                                                </div>
+                                                {/* Mobile Hint */}
+                                                <p className="text-[10px] text-zinc-600 font-bold uppercase mt-1 md:hidden opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {expandedSong === i ? "Show less" : "Tap to expand"}
+                                                </p>
                                             </div>
                                             <a
                                                 href={`https://open.spotify.com/search/${encodeURIComponent(song.title + " " + song.artist)}`}
