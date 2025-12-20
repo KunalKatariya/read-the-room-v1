@@ -3,7 +3,7 @@
 import { motion } from "framer-motion";
 import { AnalysisResult } from "@/lib/analyzer";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine } from "recharts";
-import { toPng } from "html-to-image";
+import { toPng, toBlob } from "html-to-image";
 import { useRef, useState } from "react";
 
 import { jsPDF } from "jspdf";
@@ -83,6 +83,29 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
         if (!receiptRef.current) return;
         setIsThinking(true);
         try {
+            // Mobile Share approach
+            if (navigator.share) {
+                const blob = await toBlob(receiptRef.current, {
+                    cacheBust: true,
+                    backgroundColor: "#ffffff",
+                    pixelRatio: 2,
+                });
+
+                if (blob) {
+                    const file = new File([blob], `${names}_story.png`, { type: "image/png" });
+
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                            files: [file],
+                            title: 'Broadcasting my trauma 💀',
+                            text: 'Check out my Vibe Check result!'
+                        });
+                        return; // Shared successfully
+                    }
+                }
+            }
+
+            // Desktop Fallback
             const dataUrl = await toPng(receiptRef.current, {
                 cacheBust: true,
                 backgroundColor: "#ffffff",
@@ -93,7 +116,7 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
             link.download = `${names}_story.png`;
             link.click();
         } catch (error) {
-            console.error("Failed to generate receipt", error);
+            console.error("Failed to generate/share receipt", error);
         } finally {
             setIsThinking(false);
         }
@@ -176,7 +199,7 @@ export default function AnalysisResultView({ result, onBack }: AnalysisResultVie
                         disabled={isThinking}
                         className="flex-1 md:flex-none bg-black text-white px-6 py-3 md:py-2 rounded-full text-sm font-bold shadow-lg hover:scale-105 transition-transform disabled:opacity-50"
                     >
-                        {isThinking ? "Printing..." : "📸 Download Receipt"}
+                        {isThinking ? "Printing..." : "📸 Share Receipt"}
                     </button>
                 </div>
             </div>
