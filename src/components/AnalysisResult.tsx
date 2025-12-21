@@ -294,13 +294,13 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                             {isThinking ? "Printing..." : "📸 Receipt"}
                         </button>
                         <a
-                            href="https://buymeacoffee.com/techbymistake"
+                            href="https://www.chai4.me/techbymistake"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="col-span-1 md:flex-none bg-[#FFDD00] text-zinc-900 px-4 py-3 md:px-6 md:py-2 rounded-xl md:rounded-full text-xs md:text-sm font-bold shadow-sm hover:bg-[#ffea00] hover:scale-105 transition-transform flex items-center justify-center gap-2"
                         >
                             <Coffee className="w-4 h-4" />
-                            <span className="truncate">Buy Coffee</span>
+                            <span className="truncate">Buy me chai</span>
                         </a>
                     </div>
                 )}
