@@ -150,10 +150,9 @@ function AppContent() {
                 // Ensure we are not in shared mode for a new analysis
                 setIsPublicShare(false);
                 try {
-                  // Truncate payload to ~2MB (Server Actions limit is 10MB configured in next.config.ts)
-                  const MAX_CHARS = 2000000;
-                  // FIX: Take the END of the string (latest messages) instead of the beginning
-                  const payload = text.length > MAX_CHARS ? text.substring(text.length - MAX_CHARS) : text;
+                  // Truncate payload to ~1MB to avoid 413 Vercel Edge/Function Limits (4.5MB Hard Limit)
+                  const MAX_CHARS = 1000000;
+                  const payload = text.length > MAX_CHARS ? text.substring(0, MAX_CHARS) : text;
 
                   // Call Server Action directly
                   const res = await analyzeChatAction(payload);
