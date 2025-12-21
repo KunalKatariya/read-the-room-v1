@@ -91,6 +91,10 @@ function AppContent() {
         })
         .finally(() => setLoading(false));
       return;
+    } else {
+      // STRICT SYNC: If NO ID is present in URL, we MUST NOT be in public share mode.
+      // This fixes Safari/Mobile issues where state persists even after URL clears.
+      setIsPublicShare(false);
     }
 
     // 2. Load saved result from sessionStorage (survives refresh, clears on close)
@@ -191,7 +195,14 @@ function AppContent() {
               onBack={() => {
                 // Clear URL param using Next.js router
                 router.replace("/", { scroll: false });
+
+                // Aggressive fallback for Safari
+                if (typeof window !== "undefined") {
+                  window.history.replaceState(null, "", "/");
+                }
+
                 setIsPublicShare(false); // Reset shared state
+                sessionStorage.removeItem("vibe_check_result"); // Ensure no stale data
                 setView("input");
                 setResult(null);
               }}
