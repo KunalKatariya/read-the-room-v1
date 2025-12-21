@@ -6,6 +6,29 @@ import { v4 as uuidv4 } from 'uuid';
 import { headers } from 'next/headers';
 import { getPricingForCountry } from '@/lib/pricing';
 
+// Helper to fetch GIPHY
+export async function getGiphyGifAction(query: string): Promise<string | null> {
+    try {
+        const apiKey = process.env.GIPHY_API_KEY;
+        if (!apiKey) {
+            console.warn("No GIPHY_API_KEY found");
+            return null;
+        }
+
+        const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${apiKey}&q=${encodeURIComponent(query)}&limit=1&rating=pg`);
+        const data = await res.json();
+
+        if (data.data && data.data.length > 0) {
+            return data.data[0].images.original.url;
+        }
+        return null;
+    } catch (e) {
+        console.error("Giphy Fetch Error:", e);
+        return null;
+    }
+}
+
+// ----------------------------------------------------------------------
 export async function getPricingAction() {
     const headersList = await headers();
     const country = headersList.get("x-vercel-ip-country") || "US"; // Default to US if local/unknown

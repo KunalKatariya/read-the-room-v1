@@ -51,6 +51,7 @@ export interface AnalysisResult {
         artist: string;
         reason: string; // "Because you blocked them and then unblocked them"
     }[];
+    gifSearchQuery: string; // New field for GIPHY search
 }
 
 // Keep heuristics for hard numbers (LLMs are bad at counting)
@@ -143,7 +144,8 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
             },
             { "title": "...", "artist": "...", "reason": "..." },
             { "title": "...", "artist": "...", "reason": "..." }
-        ]
+        ],
+        "gifSearchQuery": "A specific, funny search term for GIPHY that perfectly captures the mood of this relationship (e.g. 'Michael Scott grimacing', 'Elmo fire', 'Woman yelling at cat')."
     }
     
     IMPORTANT: Be deterministic. If the input is similar, the output should be similar. 
@@ -224,7 +226,8 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
                 { title: "Toxic", artist: "Britney Spears", reason: "Do we need to explain?" },
                 { title: "Hot N Cold", artist: "Katy Perry", reason: "Mixed signals slightly detected." },
                 { title: "We Are Never Ever Getting Back Together", artist: "Taylor Swift", reason: "Just a hunch." }
-            ]
+            ],
+            gifSearchQuery: data.gifSearchQuery || "confused math lady"
         };
 
     } catch (e: any) {
@@ -251,7 +254,8 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
                 { title: "Error", artist: "System Failure", reason: "Something went wrong." },
                 { title: "404", artist: "Page Not Found", reason: "Try again later." },
                 { title: "No Connection", artist: "The WiFi", reason: "Check your internet." }
-            ]
+            ],
+            gifSearchQuery: "error glitch"
         };
     }
 }

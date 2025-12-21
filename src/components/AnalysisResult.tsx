@@ -1,11 +1,13 @@
 "use client";
 
+
 import { motion } from "framer-motion";
+import { Download, Share2, Scan, Lock, Coffee, HelpCircle, FileText } from "lucide-react";
+import { getGiphyGifAction } from "@/app/actions";
 import { AnalysisResult } from "@/lib/analyzer";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine, ReferenceArea } from "recharts";
 import { toPng, toBlob } from "html-to-image";
-import { useRef, useState, useEffect } from "react";
-import { Coffee } from "lucide-react";
+import { useRef, useState, useEffect, useCallback } from "react";
 
 import { jsPDF } from "jspdf";
 
@@ -19,12 +21,60 @@ interface AnalysisResultViewProps {
     isSharedView?: boolean;
 }
 
+// Helper for counting up numbers
+const AnimatedCounter = ({ value, duration = 1.5 }: { value: number | string, duration?: number }) => {
+    const nodeRef = useRef<HTMLSpanElement>(null);
+    const isInView = (useRef(null) as any); // Type hacking not needed if we iterate, but let's use logic
+
+    // Actually, simple approach with framer-motion's useInView
+    return (
+        <CounterInner value={value} duration={duration} />
+    );
+};
+
+// Extracted inner to use hooks correctly
+import { useInView, useSpring, useMotionValue, animate } from "framer-motion";
+
+const CounterInner = ({ value, duration }: { value: number | string, duration: number }) => {
+    const ref = useRef<HTMLSpanElement>(null);
+    const inView = useInView(ref, { once: true, margin: "-10% 0px -10% 0px" });
+    const numericValue = typeof value === 'number' ? value : parseFloat(value as string) || 0;
+
+    useEffect(() => {
+        if (inView && ref.current) {
+            const controls = animate(0, numericValue, {
+                duration: duration,
+                onUpdate: (v) => {
+                    if (ref.current) ref.current.textContent = Math.floor(v).toLocaleString();
+                }
+            });
+            return () => controls.stop();
+        }
+    }, [inView, numericValue, duration]);
+
+    // If it's not a number (like a percentage string), we might want to handle it differently, 
+    // but for now we assume inputs are numbers or numeric strings.
+    // If input is "94%", we should pass 94 as value and % as suffix outside.
+    return <span ref={ref}>{0}</span>;
+};
+
 export default function AnalysisResultView({ result, onBack, isSharedView = false }: AnalysisResultViewProps) {
     const receiptRef = useRef<HTMLDivElement>(null);
     const pdfRef = useRef<HTMLDivElement>(null); // Ref for the visible UI
     const desktopPdfRef = useRef<HTMLDivElement>(null); // Ref for the hidden Desktop PDF template
 
     const [isThinking, setIsThinking] = useState(false);
+    const [gifUrl, setGifUrl] = useState<string | null>(null);
+
+    // Fetch GIF
+    useEffect(() => {
+        if (result.gifSearchQuery) {
+            getGiphyGifAction(result.gifSearchQuery).then(url => {
+                if (url) setGifUrl(url);
+            });
+        }
+    }, [result.gifSearchQuery]);
+
     const [linkCopied, setLinkCopied] = useState(false);
     const [shareLoading, setShareLoading] = useState(false);
 
@@ -34,7 +84,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
 
     // Generate a simple signature for this specific analysis content
     // We use roast + movieAnalogy as a pseudo-unique ID for local persistence
-    const contentSignature = useRef(`${result.roast.substring(0, 20)}_${result.movieAnalogy.substring(0, 20)}`).current;
+    const contentSignature = useRef(`${result.roast.substring(0, 20)}_${result.movieAnalogy.substring(0, 20)} `).current;
 
     // Check for prior unlock in localStorage using the signature
     useEffect(() => {
@@ -81,7 +131,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
     const handleShare = async () => {
         // 1. Reuse existing ID if available
         if (shareId) {
-            const url = `${window.location.origin}?id=${shareId}`;
+            const url = `${window.location.origin}?id = ${shareId} `;
             await navigator.clipboard.writeText(url);
             setLinkCopied(true);
             setTimeout(() => setLinkCopied(false), 2000);
@@ -96,7 +146,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
 
             // 3. Save to Server FIRST
             const payload = { ...result, shareId: newId };
-            const res = await fetch(`/api/share?id=${newId}`, {
+            const res = await fetch(`/ api / share ? id = ${newId} `, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -117,14 +167,14 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
             }
 
             // 5. Copy & visual feedback
-            const url = `${window.location.origin}?id=${newId}`;
+            const url = `${window.location.origin}?id = ${newId} `;
             await navigator.clipboard.writeText(url);
             setLinkCopied(true);
             setTimeout(() => setLinkCopied(false), 2000);
 
         } catch (error: any) {
             console.error("Share failed", error);
-            alert(`Could not generate share link: ${error.message}`);
+            alert(`Could not generate share link: ${error.message} `);
         } finally {
             setShareLoading(false);
         }
@@ -146,7 +196,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                 });
 
                 if (blob) {
-                    const file = new File([blob], `${names}_story.png`, { type: "image/png" });
+                    const file = new File([blob], `${names} _story.png`, { type: "image/png" });
 
                     if (navigator.canShare && navigator.canShare({ files: [file] })) {
                         await navigator.share({
@@ -167,7 +217,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
             });
             const link = document.createElement("a");
             link.href = dataUrl;
-            link.download = `${names}_story.png`;
+            link.download = `${names} _story.png`;
             link.click();
         } catch (error) {
             console.error("Failed to generate/share receipt", error);
@@ -200,7 +250,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
             });
 
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save(`${names}_report.pdf`);
+            pdf.save(`${names} _report.pdf`);
         } catch (error) {
             console.error("Failed to generate PDF", error);
         } finally {
@@ -213,8 +263,8 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
         if (active && payload && payload.length) {
             return (
                 <div className="bg-white border border-zinc-200 p-3 rounded-xl shadow-xl text-xs font-medium text-zinc-600">
-                    <p>{`Mood: ${payload[0].value}/100`}</p>
-                </div>
+                    <p>{`Mood: ${payload[0].value} /100`}</p >
+                </div >
             );
         }
         return null;
@@ -308,9 +358,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
 
             {/* Main Content Wrapper for PDF Capture */}
             <div ref={pdfRef} data-pdf-target="true" className="bg-white rounded-[2rem] p-6 md:p-10 shadow-sm border border-zinc-100">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
+                <div
                     className="text-center mb-12 md:mb-20 pt-4 md:pt-8"
                 >
                     <div className="inline-block px-4 py-1.5 bg-zinc-50 rounded-full text-xs font-semibold mb-6 uppercase tracking-wider text-zinc-500 border border-zinc-100">
@@ -324,80 +372,74 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                             </span>
                         ))}
                     </div>
-                    <h1 className="text-3xl md:text-6xl font-bold mb-6 tracking-tight text-zinc-900 leading-tight">
+                    <h1
+                        className="text-3xl md:text-6xl font-bold mb-6 tracking-tight text-zinc-900 leading-tight"
+                    >
                         {result.vibeHeadline}
                     </h1>
                     <p className="text-lg md:text-2xl font-light text-zinc-500 max-w-3xl mx-auto italic leading-relaxed mb-8">
                         "{result.roast}"
                     </p>
-                </motion.div>
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-6 md:mb-8">
                     {/* Stats Card */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.1 }}
+                    <div
                         className="bg-zinc-50/50 rounded-[2rem] p-6 md:p-10 flex flex-col justify-between min-h-[300px] border border-zinc-100/50"
                     >
-                        <div className="space-y-8 md:space-y-10">
+                        <div className="space-y-6">
                             <div>
                                 <h3 className="text-xs font-bold uppercase tracking-widest mb-2 text-zinc-400">Total Messages</h3>
-                                <div className="text-4xl md:text-5xl font-bold text-zinc-900 tracking-tight">{result.stats.totalMessages}</div>
+                                <div className="text-4xl md:text-5xl font-bold text-zinc-900 tracking-tight">
+                                    <AnimatedCounter value={result.stats.totalMessages} />
+                                </div>
                             </div>
 
                             <div>
-                                <h3 className="text-xs font-bold uppercase tracking-widest mb-2 text-zinc-400">Your Contribution</h3>
-                                <div className="text-4xl md:text-5xl font-bold text-zinc-900 tracking-tight">{result.chartData.dominance[0].value}%</div>
+                                <h3 className="text-xs font-bold uppercase tracking-widest mb-2 text-zinc-400">{result.chartData.dominance[0].name}'s Contribution</h3>
+                                <div className="text-3xl md:text-4xl font-bold text-zinc-900 tracking-tight">
+                                    <AnimatedCounter value={result.chartData.dominance[0].value} />%
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 className="text-xs font-bold uppercase tracking-widest mb-2 text-zinc-400">{result.chartData.dominance[1].name}'s Contribution</h3>
+                                <div className="text-3xl md:text-4xl font-bold text-zinc-900 tracking-tight">
+                                    <AnimatedCounter value={result.chartData.dominance[1].value} />%
+                                </div>
                             </div>
 
                             <div>
                                 <h3 className="text-xs font-bold uppercase tracking-widest mb-2 text-zinc-400">Vibe Score</h3>
                                 <div className="flex flex-wrap items-baseline gap-3 md:gap-4">
-                                    <span className="text-4xl md:text-5xl font-bold text-zinc-900 tracking-tight">{result.sentiment.score}</span>
+                                    <span className="text-4xl md:text-5xl font-bold text-zinc-900 tracking-tight">
+                                        <AnimatedCounter value={result.sentiment.score} />
+                                    </span>
                                     <span className="text-sm md:text-lg font-medium text-zinc-500 bg-white px-3 py-1 rounded-full border border-zinc-100">{result.sentiment.label}</span>
                                 </div>
                             </div>
                         </div>
-                    </motion.div>
+                    </div>
 
-                    {/* Dominance Chart */}
-                    {/* Dominance Chart */}
+                    {/* GIF / Dynamics Replacement */}
                     <div
-                        className="bg-zinc-50/50 rounded-[2rem] p-6 md:p-10 flex flex-col justify-between border border-zinc-100/50 min-h-[300px]"
+                        className="bg-zinc-900 rounded-[2rem] overflow-hidden flex flex-col justify-between border border-zinc-800 min-h-[300px] relative"
                     >
-                        <h3 className="text-xs font-bold uppercase tracking-widest mb-4 text-zinc-400">Dynamics</h3>
-                        <div className="h-[220px] md:h-[250px] w-full flex-1 relative">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <PieChart>
-                                    <Pie
-                                        data={result.chartData.dominance}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius="55%"
-                                        outerRadius="75%"
-                                        paddingAngle={4}
-                                        dataKey="value"
-                                        stroke="none"
-                                    >
-                                        {result.chartData.dominance.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip content={<CustomTooltip />} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                            {/* Center Label for simple visual */}
-                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                <span className="text-zinc-300 font-bold text-xs opacity-50">VS</span>
-                            </div>
+                        <div className="absolute top-0 left-0 w-full p-6 z-10 bg-gradient-to-b from-black/60 to-transparent">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-white/80">If this chat were a GIF</h3>
                         </div>
-                        <div className="flex justify-center gap-4 md:gap-8 text-xs md:text-sm font-medium mt-4 text-zinc-500">
-                            <div className="flex items-center gap-2">
-                                <div className="w-2.5 h-2.5 rounded-full bg-zinc-900" /> {result.chartData.dominance[0].name}
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <div className="w-2.5 h-2.5 rounded-full bg-zinc-200" /> {result.chartData.dominance[1].name}
+
+                        <div className="w-full h-full flex items-center justify-center bg-black">
+                            {gifUrl ? (
+                                <img src={gifUrl} alt="Vibe GIF" className="w-full h-full object-cover opacity-90 hover:opacity-100 transition-opacity" />
+                            ) : (
+                                <div className="text-zinc-600 text-sm font-bold animate-pulse">Finding the perfect GIF...</div>
+                            )}
+                        </div>
+
+                        <div className="absolute bottom-4 right-4 z-10">
+                            <div className="bg-black/50 backdrop-blur-md px-2 py-1 rounded-md border border-white/10">
+                                <span className="text-[10px] font-bold text-white uppercase tracking-wider">Powered by GIPHY</span>
                             </div>
                         </div>
                     </div>
@@ -473,10 +515,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                         {/* Insight Cards */}
                         <div className="max-w-4xl mx-auto space-y-6 md:space-y-8 mb-12 md:mb-16">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.4 }}
+                                <div
                                     className="p-6 md:p-8 rounded-[2rem] bg-red-500 text-white shadow-xl shadow-red-200/50"
                                 >
                                     <h3 className="text-red-100 font-bold mb-6 text-sm uppercase tracking-widest flex items-center gap-2 border-b border-white/20 pb-4">
@@ -489,12 +528,9 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                             </li>
                                         ))}
                                     </ul>
-                                </motion.div>
+                                </div>
 
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.5 }}
+                                <div
                                     className="p-6 md:p-8 rounded-[2rem] bg-emerald-500 text-white shadow-xl shadow-emerald-200/50"
                                 >
                                     <h3 className="text-emerald-100 font-bold mb-6 text-sm uppercase tracking-widest flex items-center gap-2 border-b border-white/20 pb-4">
@@ -513,7 +549,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                             </li>
                                         )}
                                     </ul>
-                                </motion.div>
+                                </div>
                             </div>
 
                             {/* Insight Cards Grid - Main UI */}
@@ -539,7 +575,10 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {safeRpgCards.map((card, idx) => (
-                                        <div key={idx} className="relative overflow-hidden bg-white border-2 border-zinc-900 rounded-xl p-6 shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] transition-all">
+                                        <div
+                                            key={idx}
+                                            className="relative overflow-hidden bg-white border-2 border-zinc-900 rounded-xl p-6 shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] transition-all"
+                                        >
                                             <div className="absolute top-0 right-0 p-2 bg-zinc-900 text-white text-xs font-bold rounded-bl-xl z-20">
                                                 LVL {card.level || 99}
                                             </div>
@@ -557,9 +596,12 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                                         <span>{card.stats.yapLevel}/100</span>
                                                     </div>
                                                     <div className="h-2 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200">
-                                                        <div
+                                                        <motion.div
+                                                            initial={{ width: 0 }}
+                                                            whileInView={{ width: `${card.stats.yapLevel}%` }}
+                                                            transition={{ duration: 1, ease: "easeOut" }}
+                                                            viewport={{ once: true }}
                                                             className="h-full bg-blue-500"
-                                                            style={{ width: `${card.stats.yapLevel}%` }}
                                                         />
                                                     </div>
                                                 </div>
@@ -569,9 +611,12 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                                         <span>{card.stats.simpScore}/100</span>
                                                     </div>
                                                     <div className="h-2 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200">
-                                                        <div
+                                                        <motion.div
+                                                            initial={{ width: 0 }}
+                                                            whileInView={{ width: `${card.stats.simpScore}%` }}
+                                                            transition={{ duration: 1, ease: "easeOut" }}
+                                                            viewport={{ once: true }}
                                                             className="h-full bg-pink-500"
-                                                            style={{ width: `${card.stats.simpScore}%` }}
                                                         />
                                                     </div>
                                                 </div>
@@ -581,9 +626,12 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                                         <span>{card.stats.chaosMeasure}/100</span>
                                                     </div>
                                                     <div className="h-2 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200">
-                                                        <div
+                                                        <motion.div
+                                                            initial={{ width: 0 }}
+                                                            whileInView={{ width: `${card.stats.chaosMeasure}%` }}
+                                                            transition={{ duration: 1, ease: "easeOut" }}
+                                                            viewport={{ once: true }}
                                                             className="h-full bg-purple-500"
-                                                            style={{ width: `${card.stats.chaosMeasure}%` }}
                                                         />
                                                     </div>
                                                 </div>
@@ -1108,6 +1156,6 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                 </div>
             </div>
 
-        </div >
+        </div>
     );
 }
