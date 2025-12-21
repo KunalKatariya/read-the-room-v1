@@ -106,7 +106,7 @@ export default function ChatInput({ onAnalyze, onBack, onShowInstructions }: Cha
                             />
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs text-zinc-400 font-medium uppercase tracking-wide">
                                 <span>{text.length} chars</span>
-                                <span>We don't store this, <span className="text-pink-400 font-bold">pinky promise 🤙</span></span>
+                                <span>We don't store this, <span className="text-pink-400 font-bold">pinky promise 😉</span></span>
                             </div>
                         </div>
                     ) : (

@@ -1,8 +1,8 @@
 "use client";
 
 
-import { motion } from "framer-motion";
-import { Download, Share2, Scan, Lock, Coffee, HelpCircle, FileText } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Download, Share2, Scan, Lock, Coffee, HelpCircle, FileText, Instagram, X } from "lucide-react";
 import { getGiphyGifAction } from "@/app/actions";
 import { AnalysisResult } from "@/lib/analyzer";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine, ReferenceArea } from "recharts";
@@ -65,6 +65,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
 
     const [isThinking, setIsThinking] = useState(false);
     const [gifUrl, setGifUrl] = useState<string | null>(null);
+    const [showExitModal, setShowExitModal] = useState(false);
 
     // Fetch GIF
     useEffect(() => {
@@ -308,52 +309,14 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
     return (
         <div className="w-full max-w-5xl mx-auto px-4 py-8 md:px-6 md:py-16 pb-32">
             {/* ... navigation header ... */}
+            {/* ... navigation header ... */}
             <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-8 md:mb-12">
-                {/* existing header content remains unchanged, just ensuring we are in the right scope if possible, 
-                   but actually I should just target the roast paragraph to insert the button, 
-                   and the top of the component to insert the state/logic. 
-                   I will split this into two `replace_file_content` or use `multi_replace` if safe.
-                   Let's use `multi_replace` for atomic update.
-               */}
-
-                <button onClick={onBack} className="text-sm text-zinc-400 hover:text-zinc-900 transition-colors flex items-center gap-2 font-medium self-start md:self-auto">
-                    ← Return to input
+                <button
+                    onClick={() => setShowExitModal(true)}
+                    className="text-sm text-zinc-400 hover:text-zinc-900 transition-colors flex items-center gap-2 font-medium self-start md:self-auto group"
+                >
+                    <span className="group-hover:-translate-x-1 transition-transform">←</span> Return to input
                 </button>
-
-                {!isSharedView && (
-                    <div className="grid grid-cols-2 gap-3 w-full md:flex md:w-auto md:gap-4">
-                        <button
-                            onClick={handleShare}
-                            disabled={shareLoading || linkCopied}
-                            className={`col-span-1 md:flex-none ${linkCopied ? "bg-green-500 text-white" : "bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50"} px-4 py-3 md:px-6 md:py-2 rounded-xl md:rounded-full text-xs md:text-sm font-bold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center`}
-                        >
-                            {shareLoading ? "Creating..." : linkCopied ? "✓ Copied" : "🔗 Copy Link"}
-                        </button>
-                        <button
-                            onClick={handleDownloadPDF}
-                            disabled={isThinking}
-                            className="col-span-1 md:flex-none bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50 px-4 py-3 md:px-6 md:py-2 rounded-xl md:rounded-full text-xs md:text-sm font-bold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center"
-                        >
-                            {isThinking ? "Thinking..." : "📄 PDF"}
-                        </button>
-                        <button
-                            onClick={handleDownloadReceipt}
-                            disabled={isThinking}
-                            className="col-span-1 md:flex-none bg-black text-white px-4 py-3 md:px-6 md:py-2 rounded-xl md:rounded-full text-xs md:text-sm font-bold shadow-lg hover:scale-105 transition-transform disabled:opacity-50 flex items-center justify-center"
-                        >
-                            {isThinking ? "Printing..." : "📸 Receipt"}
-                        </button>
-                        <a
-                            href="https://www.chai4.me/techbymistake"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="col-span-1 md:flex-none bg-[#C2782E] text-white px-4 py-3 md:px-6 md:py-2 rounded-xl md:rounded-full text-xs md:text-sm font-bold shadow-sm hover:bg-[#A5601F] hover:scale-105 transition-transform flex items-center justify-center gap-2"
-                        >
-                            <Coffee className="w-4 h-4" />
-                            <span className="truncate">Buy me chai</span>
-                        </a>
-                    </div>
-                )}
             </div>
 
             {/* Main Content Wrapper for PDF Capture */}
@@ -1156,6 +1119,140 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                 </div>
             </div>
 
-        </div>
+            {/* Bottom Actions Footer */}
+            {!isSharedView && (
+                <div className="mt-16 border-t border-zinc-100 pt-8">
+                    <div className="flex flex-col items-center gap-6">
+                        <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Share or Save Results</h3>
+
+                        <div className="flex flex-wrap justify-center gap-3 w-full md:gap-4">
+                            <button
+                                onClick={handleShare}
+                                disabled={shareLoading || linkCopied}
+                                className={`min-w-[140px] ${linkCopied ? "bg-green-500 text-white" : "bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50"} px-6 py-3 rounded-full text-sm font-bold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
+                            >
+                                {shareLoading ? "Creating..." : linkCopied ? "✓ Copied" : <><Share2 className="w-4 h-4" /> Copy Link</>}
+                            </button>
+                            <button
+                                onClick={handleDownloadPDF}
+                                disabled={isThinking}
+                                className="min-w-[120px] bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50 px-6 py-3 rounded-full text-sm font-bold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                <FileText className="w-4 h-4" /> {isThinking ? "Wait..." : "PDF"}
+                            </button>
+                            <button
+                                onClick={handleDownloadReceipt}
+                                disabled={isThinking}
+                                className="min-w-[120px] bg-black text-white px-6 py-3 rounded-full text-sm font-bold shadow-lg hover:scale-105 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                <Scan className="w-4 h-4" /> {isThinking ? "Wait..." : "Receipt"}
+                            </button>
+                            <a
+                                href="https://www.chai4.me/techbymistake"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="min-w-[140px] bg-[#FFDD00] text-zinc-900 px-6 py-3 rounded-full text-sm font-bold shadow-sm hover:bg-[#E6C200] hover:scale-105 transition-transform flex items-center justify-center gap-2"
+                            >
+                                <Coffee className="w-4 h-4" />
+                                <span>Buy me chai</span>
+                            </a>
+                        </div>
+
+                        {/* Success Message for Copy Link */}
+                        <AnimatePresence>
+                            {linkCopied && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="text-center bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm font-medium border border-green-100"
+                                >
+                                    Link copied! Send it to your friend (or ex) to compare vibes. 🔗
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        <div className="pt-8">
+                            <button
+                                onClick={() => setShowExitModal(true)}
+                                className="text-zinc-400 text-sm font-medium hover:text-zinc-900 transition-colors uppercase tracking-widest flex items-center gap-2 group"
+                            >
+                                <span className="group-hover:-translate-x-1 transition-transform">←</span> Try another chat
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Exit Modal */}
+            <AnimatePresence>
+                {showExitModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setShowExitModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            className="bg-white rounded-[2rem] p-8 max-w-sm w-full shadow-2xl relative overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <button
+                                onClick={() => setShowExitModal(false)}
+                                className="absolute top-4 right-4 p-2 bg-zinc-100 rounded-full hover:bg-zinc-200 transition-colors"
+                            >
+                                <X className="w-4 h-4 text-zinc-500" />
+                            </button>
+
+                            <div className="text-center space-y-6">
+                                <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto text-3xl">
+                                    ☕️
+                                </div>
+
+                                <div>
+                                    <h3 className="text-xl font-bold text-zinc-900 mb-2">Wait! Before you go...</h3>
+                                    <p className="text-zinc-500 text-sm leading-relaxed">
+                                        Support me so I can keep judging your relationships?
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <a
+                                        href="https://www.chai4.me/techbymistake"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block w-full bg-[#FFDD00] text-zinc-900 py-3 rounded-xl font-bold font-sm hover:bg-[#E6C200] transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <Coffee className="w-4 h-4" />
+                                        Buy me chai
+                                    </a>
+
+                                    <a
+                                        href="https://instagram.com/techbymistake" // Placeholder or real
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 rounded-xl font-bold font-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                                    >
+                                        <Instagram className="w-4 h-4" />
+                                        Follow on Instagram
+                                    </a>
+                                </div>
+
+                                <button
+                                    onClick={onBack}
+                                    className="text-zinc-400 text-xs font-medium hover:text-zinc-900 transition-colors uppercase tracking-wider"
+                                >
+                                    No thanks, just exit →
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+        </div >
     );
 }
