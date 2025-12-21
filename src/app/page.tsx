@@ -9,10 +9,11 @@ import ExportInstructions from "@/components/ExportInstructions";
 import { analyzeChatAction } from "./actions";
 import { type AnalysisResult } from "@/lib/analyzer";
 import { motion, AnimatePresence } from "framer-motion";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 function AppContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   // Check if we have an ID immediately to prevent flash of landing page
   const hasIdParam = searchParams.has("id");
 
@@ -26,6 +27,7 @@ function AppContent() {
   const [isPublicShare, setIsPublicShare] = useState(false);
 
   const startAnalysis = () => {
+    setIsPublicShare(false); // Reset shared state for new analysis
     setView("input");
   };
 
@@ -117,6 +119,7 @@ function AppContent() {
   const handleBack = () => {
     sessionStorage.removeItem("vibe_check_result");
     setResult(null);
+    setIsPublicShare(false);
     setView("landing");
   };
 
@@ -140,6 +143,8 @@ function AppContent() {
               onShowInstructions={() => setView("instructions")}
               onAnalyze={async (text, apiKey) => {
                 setLoading(true);
+                // Ensure we are not in shared mode for a new analysis
+                setIsPublicShare(false);
                 try {
                   // Call Server Action directly
                   const res = await analyzeChatAction(text);
@@ -184,10 +189,11 @@ function AppContent() {
               result={result}
               isSharedView={isPublicShare}
               onBack={() => {
+                // Clear URL param using Next.js router
+                router.replace("/", { scroll: false });
+                setIsPublicShare(false); // Reset shared state
                 setView("input");
                 setResult(null);
-                // Clear URL param
-                window.history.replaceState(null, "", window.location.pathname);
               }}
             />
           </motion.div>
