@@ -103,7 +103,8 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
             });
 
             if (!res.ok) {
-                throw new Error("Failed to save share data");
+                const errorData = await res.json();
+                throw new Error(errorData.error || "Failed to save share data");
             }
 
             // 4. Update State & LocalStorage only after success
@@ -121,9 +122,9 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
             setLinkCopied(true);
             setTimeout(() => setLinkCopied(false), 2000);
 
-        } catch (error) {
+        } catch (error: any) {
             console.error("Share failed", error);
-            alert("Could not generate share link. Please try again.");
+            alert(`Could not generate share link: ${error.message}`);
         } finally {
             setShareLoading(false);
         }
