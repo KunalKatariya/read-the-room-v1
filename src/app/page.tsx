@@ -97,8 +97,8 @@ function AppContent() {
       setIsPublicShare(false);
     }
 
-    // 2. Load saved result from sessionStorage (survives refresh, clears on close)
-    const savedResult = sessionStorage.getItem("vibe_check_result");
+    // 2. Load saved result from localStorage (survives refresh, clears on close)
+    const savedResult = localStorage.getItem("vibe_check_result");
     if (savedResult) {
       try {
         const parsed = JSON.parse(savedResult);
@@ -106,7 +106,7 @@ function AppContent() {
         setView("result");
       } catch (e) {
         console.error("Failed to parse saved result", e);
-        sessionStorage.removeItem("vibe_check_result");
+        localStorage.removeItem("vibe_check_result");
       }
     }
   }, [searchParams]);
@@ -121,7 +121,7 @@ function AppContent() {
   }, [loading]);
 
   const handleBack = () => {
-    sessionStorage.removeItem("vibe_check_result");
+    localStorage.removeItem("vibe_check_result");
     setResult(null);
     setIsPublicShare(false);
     setView("landing");
@@ -150,15 +150,19 @@ function AppContent() {
                 // Ensure we are not in shared mode for a new analysis
                 setIsPublicShare(false);
                 try {
+                  // Truncate payload to ~1MB to avoid 413 Vercel Edge/Function Limits (4.5MB Hard Limit)
+                  const MAX_CHARS = 1000000;
+                  const payload = text.length > MAX_CHARS ? text.substring(0, MAX_CHARS) : text;
+
                   // Call Server Action directly
-                  const res = await analyzeChatAction(text);
+                  const res = await analyzeChatAction(payload);
 
                   if (res.roast.startsWith("Internal Error:")) {
                     setErrorMsg(res.roast.replace("Internal Error:", "").trim());
                     setView("error");
                   } else {
                     setResult(res);
-                    sessionStorage.setItem("vibe_check_result", JSON.stringify(res));
+                    localStorage.setItem("vibe_check_result", JSON.stringify(res));
                     setView("result");
                   }
                 } catch (e: any) {
@@ -202,7 +206,7 @@ function AppContent() {
                 }
 
                 setIsPublicShare(false); // Reset shared state
-                sessionStorage.removeItem("vibe_check_result"); // Ensure no stale data
+                localStorage.removeItem("vibe_check_result"); // Ensure no stale data
                 setView("input");
                 setResult(null);
               }}

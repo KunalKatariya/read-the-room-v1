@@ -109,11 +109,11 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
 
             // 4. Update State & LocalStorage only after success
             setShareId(newId);
-            const saved = sessionStorage.getItem("vibe_check_result");
+            const saved = localStorage.getItem("vibe_check_result");
             if (saved) {
                 const parsed = JSON.parse(saved);
                 parsed.shareId = newId;
-                sessionStorage.setItem("vibe_check_result", JSON.stringify(parsed));
+                localStorage.setItem("vibe_check_result", JSON.stringify(parsed));
             }
 
             // 5. Copy & visual feedback
@@ -297,7 +297,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                             href="https://www.chai4.me/techbymistake"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="col-span-1 md:flex-none bg-[#FFDD00] text-zinc-900 px-4 py-3 md:px-6 md:py-2 rounded-xl md:rounded-full text-xs md:text-sm font-bold shadow-sm hover:bg-[#ffea00] hover:scale-105 transition-transform flex items-center justify-center gap-2"
+                            className="col-span-1 md:flex-none bg-[#C2782E] text-white px-4 py-3 md:px-6 md:py-2 rounded-xl md:rounded-full text-xs md:text-sm font-bold shadow-sm hover:bg-[#A5601F] hover:scale-105 transition-transform flex items-center justify-center gap-2"
                         >
                             <Coffee className="w-4 h-4" />
                             <span className="truncate">Buy me chai</span>
