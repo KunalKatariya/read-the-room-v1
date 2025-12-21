@@ -77,6 +77,7 @@ function getBasicStats(text: string) {
 
 export async function analyzeChatWithGemini(text: string, apiKey: string): Promise<AnalysisResult> {
     const stats = getBasicStats(text);
+    console.log(`[Gemini] Starting analysis. Key present: ${!!apiKey}, Text len: ${text.length}`);
 
     // Initialize Gemini strict
     const genAI = new GoogleGenerativeAI(apiKey);
