@@ -132,7 +132,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
     const handleShare = async () => {
         // 1. Reuse existing ID if available
         if (shareId) {
-            const url = `${window.location.origin}?id = ${shareId} `;
+            const url = `${window.location.origin}?id=${shareId}`;
             await navigator.clipboard.writeText(url);
             setLinkCopied(true);
             setTimeout(() => setLinkCopied(false), 2000);
@@ -147,7 +147,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
 
             // 3. Save to Server FIRST
             const payload = { ...result, shareId: newId };
-            const res = await fetch(`/ api / share ? id = ${newId} `, {
+            const res = await fetch(`/api/share?id=${newId}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
