@@ -4,7 +4,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, MessageSquareText, FileText } from "lucide-react";
+import { Upload, MessageSquareText, FileText, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChatInputProps {
@@ -81,6 +81,20 @@ export default function ChatInput({ onAnalyze, onBack, onShowInstructions }: Cha
                     </button>
                 </div>
 
+
+                {/* Persistent Helper Bar */}
+                <div className="bg-zinc-50 border-b border-zinc-100 px-6 py-2 flex justify-end items-center">
+                    {onShowInstructions && (
+                        <button
+                            onClick={(e) => { e.preventDefault(); onShowInstructions(); }}
+                            className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1.5 transition-colors"
+                        >
+                            <HelpCircle size={14} />
+                            How to export chat history?
+                        </button>
+                    )}
+                </div>
+
                 <div className="p-8">
                     {mode === "paste" ? (
                         <div className="space-y-4">
@@ -122,15 +136,6 @@ export default function ChatInput({ onAnalyze, onBack, onShowInstructions }: Cha
                             <Button variant="outline" onClick={() => document.getElementById("file-upload")?.click()}>
                                 Browse Files
                             </Button>
-
-                            {onShowInstructions && (
-                                <button
-                                    onClick={(e) => { e.preventDefault(); onShowInstructions(); }}
-                                    className="text-xs text-zinc-400 hover:text-zinc-600 underline mt-4"
-                                >
-                                    How to export chat history?
-                                </button>
-                            )}
                         </div>
                     )}
                 </div>
