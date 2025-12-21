@@ -647,7 +647,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                                 onClick={() => toggleSong(i)}
                                             >
                                                 <div className="flex flex-col md:flex-row md:items-baseline md:gap-2">
-                                                    <h4 className="font-bold text-lg truncate">{song.title}</h4>
+                                                    <h4 className={`font-bold text-lg transition-all ${expandedSong === i ? "whitespace-normal" : "truncate"}`}>{song.title}</h4>
                                                     <span className="text-zinc-500 text-sm font-medium">{song.artist}</span>
                                                 </div>
                                                 <div className="relative">
