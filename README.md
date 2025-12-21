@@ -89,4 +89,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ---
 
-*Made with 💀 and ☕️ by [Your Name](https://twitter.com/yourhandle)*
+*Made with 💀 and ☕️ by [Kunal Katariya](https://www.instagram.com/techbymistake/)*
