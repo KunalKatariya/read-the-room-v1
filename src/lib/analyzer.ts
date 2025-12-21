@@ -153,10 +153,31 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
     try {
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        const jsonString = response.text().replace(/```json/g, "").replace(/```/g, "").trim();
-        const start = jsonString.indexOf("{");
-        const end = jsonString.lastIndexOf("}") + 1;
-        const data = JSON.parse(jsonString.substring(start, end));
+        const responseText = response.text();
+
+        // 1. Try to extract from markdown code blocks first (most reliable)
+        const codeBlockMatch = responseText.match(/```json\n([\s\S]*?)\n```/) || responseText.match(/```([\s\S]*?)```/);
+
+        let jsonString = "";
+        if (codeBlockMatch && codeBlockMatch[1]) {
+            jsonString = codeBlockMatch[1].trim();
+        } else {
+            // 2. Fallback: Find the FIRST valid balanced JSON object? 
+            // Or just try the first outer brace pair if no code blocks.
+            // Using lastIndexOf("}") can be dangerous if there's multiple objects.
+            // Let's try to be smarter: find first { and last } BUT if that fails, try to find the *first* closing brace that matches?
+            // For now, let's just stick to the first { and last } trimming, but safer.
+            const start = responseText.indexOf("{");
+            const end = responseText.lastIndexOf("}") + 1;
+            if (start !== -1 && end > start) {
+                jsonString = responseText.substring(start, end);
+            }
+        }
+
+        // Clean potentially bad generic cleanup
+        if (!jsonString) throw new Error("No JSON found in response");
+
+        const data = JSON.parse(jsonString);
 
         // Use AI-generated trend or fallback to flat line if missing
         const trendData = (data.sentimentTrend && Array.isArray(data.sentimentTrend) && data.sentimentTrend.length > 0)
