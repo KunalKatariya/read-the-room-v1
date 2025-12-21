@@ -788,13 +788,18 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                 <LineChart data={result.chartData.sentimentTrend} margin={{ top: 20, right: 10, left: 10, bottom: 20 }}>
                                     <XAxis dataKey="messageIndex" hide />
                                     <YAxis domain={[0, 100]} hide />
+
+                                    {/* Fun Zones for PDF */}
+                                    <ReferenceArea y1={80} y2={100} fill="#dcfce7" fillOpacity={0.3} label={{ value: "SIMP ZONE", position: "insideTopRight", fill: "#15803d", fontSize: 10, fontWeight: "bold" }} />
+                                    <ReferenceArea y1={0} y2={20} fill="#fee2e2" fillOpacity={0.3} label={{ value: "TOXIC WASTE", position: "insideBottomRight", fill: "#b91c1c", fontSize: 10, fontWeight: "bold" }} />
+
                                     <ReferenceLine y={50} stroke="#e4e4e7" strokeDasharray="5 5" />
                                     <Line
                                         type="monotone"
                                         dataKey="score"
                                         stroke="#18181b"
                                         strokeWidth={3}
-                                        dot={false}
+                                        dot={<CustomEmojiDot />}
                                         isAnimationActive={false}
                                     />
                                 </LineChart>
