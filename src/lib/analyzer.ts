@@ -52,6 +52,7 @@ export interface AnalysisResult {
         reason: string; // "Because you blocked them and then unblocked them"
     }[];
     gifSearchQuery: string; // New field for GIPHY search
+    gifUrl?: string; // Persisted GIF URL for sharing consistency
 }
 
 // Keep heuristics for hard numbers (LLMs are bad at counting)

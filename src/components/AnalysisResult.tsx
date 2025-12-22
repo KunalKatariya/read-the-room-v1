@@ -67,14 +67,16 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
     const [gifUrl, setGifUrl] = useState<string | null>(null);
     const [showExitModal, setShowExitModal] = useState(false);
 
-    // Fetch GIF
+    // Fetch GIF (or use saved one)
     useEffect(() => {
-        if (result.gifSearchQuery) {
+        if (result.gifUrl) {
+            setGifUrl(result.gifUrl);
+        } else if (result.gifSearchQuery) {
             getGiphyGifAction(result.gifSearchQuery).then(url => {
                 if (url) setGifUrl(url);
             });
         }
-    }, [result.gifSearchQuery]);
+    }, [result.gifSearchQuery, result.gifUrl]);
 
     const [linkCopied, setLinkCopied] = useState(false);
     const [shareLoading, setShareLoading] = useState(false);
@@ -146,7 +148,8 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
             const newId = uuidv4();
 
             // 3. Save to Server FIRST
-            const payload = { ...result, shareId: newId };
+            // Include the specific GIF URL so the shared view sees the exact same one
+            const payload = { ...result, shareId: newId, gifUrl: gifUrl || undefined };
             const res = await fetch(`/api/share?id=${newId}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
