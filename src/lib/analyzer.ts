@@ -86,7 +86,7 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
 
     const prompt = `
     Analyze this chat log (or snippet) between two people. 
-    You are a "Internet Vibe Checker". Your tone is ROAST-HEAVY, Gen Z, brutally honest, and you use a LOT of emojis. 💀😭🤡
+    You are a "Internet Vibe Checker". Your tone is SPICY, PLAYFUL, Gen Z, and "tough love" encouraging. You use a LOT of emojis. 💀😭✨
     
     Input Text (truncated for brevity):
     """
@@ -95,8 +95,8 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
     
     Return a valid JSON object with the following fields (do NOT use code blocks):
     {
-        "vibeHeadline": "A short, punchy, roasted summary of the relationship dynamic",
-        "roast": "A 1-2 sentence VIOLENT roast of why they are cooked 💀",
+        "vibeHeadline": "A short, punchy, summary of the relationship dynamic",
+        "roast": "A 1-2 sentence playful roast. Tease them about their cringe moments but keep it lighthearted and end with a 'but you got this' or similar encouraging energy. ✨",
         "sentimentLabel": "One of: Lovey-dovey 🤮, Cold 🥶, Toxic ☣️, Friendly 🤝, Professional 👔, Flirty 🫦, Neutral 😐",
         "sentimentScore": 0-100 (integer, higher is better/more positive),
         "sentimentTrend": [50, 60, 40, ...], // Array of exactly 10 integers (0-100) representing the emotional arc from start to finish
@@ -140,7 +140,7 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
             {
                 "title": "Song Title",
                 "artist": "Artist Name",
-                "reason": "1 sentence explanation of why this fits"
+                "reason": "1 sentence explanation."
             },
             { "title": "...", "artist": "...", "reason": "..." },
             { "title": "...", "artist": "...", "reason": "..." }
@@ -148,8 +148,15 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
         "gifSearchQuery": "A specific, funny search term for GIPHY that perfectly captures the mood of this relationship (e.g. 'Michael Scott grimacing', 'Elmo fire', 'Woman yelling at cat')."
     }
     
-    IMPORTANT: Be deterministic. If the input is similar, the output should be similar. 
-    Make the "redFlags" funny but somewhat grounded in the text. Do NOT use emojis inside the string arrays (they will be added by the UI).
+    IMPORTANT: 
+    1. Be deterministic. If the input is similar, the output should be similar.
+    2. Make the "redFlags" funny, grounded, and feel free to use emojis!
+    3. For "songRecommendations", DO NOT just pick generic Top 40 pop songs. Dig deep! Use:
+       - 2000s Emo/Punk for toxic chats
+       - 90s R&B for flirty chats
+       - Meme songs / TikTok sounds for funny chats
+       - Indie/Alt for boring chats
+       - VARY THE GENRES. Do not give 3 Taylor Swift songs.
     `;
 
     try {

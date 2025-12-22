@@ -487,7 +487,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                     <ul className="space-y-4">
                                         {result.redFlags.map((flag, i) => (
                                             <li key={i} className="leading-snug font-medium text-lg border-l-2 border-white/40 pl-6 py-1">
-                                                {flag.replace(/^[^\w]+/, '')}
+                                                {flag}
                                             </li>
                                         ))}
                                     </ul>
@@ -503,7 +503,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                         {result.greenFlags.length > 0 ? (
                                             result.greenFlags.map((flag, i) => (
                                                 <li key={i} className="leading-snug font-medium text-lg border-l-2 border-white/40 pl-6 py-1">
-                                                    {flag.replace(/^[^\w]+/, '')}
+                                                    {flag}
                                                 </li>
                                             ))
                                         ) : (
@@ -678,6 +678,70 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                         </div>
                     </div>
                 </div>
+
+                {/* Bottom Actions Footer (Moved Up) */}
+                {!isSharedView && (
+                    <div className="mt-16 border-t border-zinc-100 pt-8">
+                        <div className="flex flex-col items-center gap-6">
+                            <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Share or Save Results</h3>
+
+                            <div className="flex flex-wrap justify-center gap-3 w-full md:gap-4">
+                                <button
+                                    onClick={handleShare}
+                                    disabled={shareLoading || linkCopied}
+                                    className={`min-w-[140px] ${linkCopied ? "bg-green-500 text-white" : "bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50"} px-6 py-3 rounded-full text-sm font-bold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
+                                >
+                                    {shareLoading ? "Creating..." : linkCopied ? "✓ Copied" : <><Share2 className="w-4 h-4" /> Copy Link</>}
+                                </button>
+                                <button
+                                    onClick={handleDownloadPDF}
+                                    disabled={isThinking}
+                                    className="min-w-[120px] bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50 px-6 py-3 rounded-full text-sm font-bold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    <FileText className="w-4 h-4" /> {isThinking ? "Wait..." : "PDF"}
+                                </button>
+                                <button
+                                    onClick={handleDownloadReceipt}
+                                    disabled={isThinking}
+                                    className="min-w-[120px] bg-black text-white px-6 py-3 rounded-full text-sm font-bold shadow-lg hover:scale-105 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
+                                >
+                                    <Scan className="w-4 h-4" /> {isThinking ? "Wait..." : "Receipt"}
+                                </button>
+                                <a
+                                    href="https://www.chai4.me/techbymistake"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="min-w-[140px] bg-[#FFDD00] text-zinc-900 px-6 py-3 rounded-full text-sm font-bold shadow-sm hover:bg-[#E6C200] hover:scale-105 transition-transform flex items-center justify-center gap-2"
+                                >
+                                    <Coffee className="w-4 h-4" />
+                                    <span>Buy me chai</span>
+                                </a>
+                            </div>
+
+                            {/* Success Message for Copy Link */}
+                            <AnimatePresence>
+                                {linkCopied && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: -10 }}
+                                        className="text-center bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm font-medium border border-green-100"
+                                    >
+                                        Link copied! Send it to your friend (or ex) to compare vibes. 🔗
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                            <div className="pt-8">
+                                <button
+                                    onClick={() => setShowExitModal(true)}
+                                    className="text-zinc-400 text-sm font-medium hover:text-zinc-900 transition-colors uppercase tracking-widest flex items-center gap-2 group"
+                                >
+                                    <span className="group-hover:-translate-x-1 transition-transform">←</span> Try another chat
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* PDF Specific Footer */}
                 <div className="text-center pb-8 border-t border-zinc-100 pt-8 mt-8 md:mt-16">
@@ -1120,68 +1184,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
             </div>
 
             {/* Bottom Actions Footer */}
-            {!isSharedView && (
-                <div className="mt-16 border-t border-zinc-100 pt-8">
-                    <div className="flex flex-col items-center gap-6">
-                        <h3 className="text-sm font-bold uppercase tracking-widest text-zinc-400">Share or Save Results</h3>
 
-                        <div className="flex flex-wrap justify-center gap-3 w-full md:gap-4">
-                            <button
-                                onClick={handleShare}
-                                disabled={shareLoading || linkCopied}
-                                className={`min-w-[140px] ${linkCopied ? "bg-green-500 text-white" : "bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50"} px-6 py-3 rounded-full text-sm font-bold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
-                            >
-                                {shareLoading ? "Creating..." : linkCopied ? "✓ Copied" : <><Share2 className="w-4 h-4" /> Copy Link</>}
-                            </button>
-                            <button
-                                onClick={handleDownloadPDF}
-                                disabled={isThinking}
-                                className="min-w-[120px] bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50 px-6 py-3 rounded-full text-sm font-bold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                                <FileText className="w-4 h-4" /> {isThinking ? "Wait..." : "PDF"}
-                            </button>
-                            <button
-                                onClick={handleDownloadReceipt}
-                                disabled={isThinking}
-                                className="min-w-[120px] bg-black text-white px-6 py-3 rounded-full text-sm font-bold shadow-lg hover:scale-105 transition-transform disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                                <Scan className="w-4 h-4" /> {isThinking ? "Wait..." : "Receipt"}
-                            </button>
-                            <a
-                                href="https://www.chai4.me/techbymistake"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="min-w-[140px] bg-[#FFDD00] text-zinc-900 px-6 py-3 rounded-full text-sm font-bold shadow-sm hover:bg-[#E6C200] hover:scale-105 transition-transform flex items-center justify-center gap-2"
-                            >
-                                <Coffee className="w-4 h-4" />
-                                <span>Buy me chai</span>
-                            </a>
-                        </div>
-
-                        {/* Success Message for Copy Link */}
-                        <AnimatePresence>
-                            {linkCopied && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    className="text-center bg-green-50 text-green-700 px-4 py-2 rounded-lg text-sm font-medium border border-green-100"
-                                >
-                                    Link copied! Send it to your friend (or ex) to compare vibes. 🔗
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                        <div className="pt-8">
-                            <button
-                                onClick={() => setShowExitModal(true)}
-                                className="text-zinc-400 text-sm font-medium hover:text-zinc-900 transition-colors uppercase tracking-widest flex items-center gap-2 group"
-                            >
-                                <span className="group-hover:-translate-x-1 transition-transform">←</span> Try another chat
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Exit Modal */}
             <AnimatePresence>

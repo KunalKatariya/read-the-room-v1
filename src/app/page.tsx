@@ -150,9 +150,23 @@ function AppContent() {
                 // Ensure we are not in shared mode for a new analysis
                 setIsPublicShare(false);
                 try {
-                  // Truncate payload to ~1MB to avoid 413 Vercel Edge/Function Limits (4.5MB Hard Limit)
-                  const MAX_CHARS = 1000000;
-                  const payload = text.length > MAX_CHARS ? text.substring(0, MAX_CHARS) : text;
+                  // 1. Remove noise to save space
+                  const cleanText = text
+                    .replace(/<Media omitted>/g, "")
+                    .replace(/\n\s*\n/g, "\n")
+                    .trim();
+
+                  // 2. Smart Truncation Strategy (Target: ~4MB total)
+                  const MAX_TOTAL = 4000000;
+                  const START_CHARS = 20000; // Keep first 20k for "how it met" context
+
+                  let payload = cleanText;
+
+                  if (cleanText.length > MAX_TOTAL) {
+                    const firstPart = cleanText.substring(0, START_CHARS);
+                    const lastPart = cleanText.substring(cleanText.length - (MAX_TOTAL - START_CHARS));
+                    payload = firstPart + "\n\n... [Middle content omitted to fit context] ...\n\n" + lastPart;
+                  }
 
                   // Call Server Action directly
                   const res = await analyzeChatAction(payload);
