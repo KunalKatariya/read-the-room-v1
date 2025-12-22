@@ -135,7 +135,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
             const url = `${window.location.origin}?id=${shareId}`;
             await navigator.clipboard.writeText(url);
             setLinkCopied(true);
-            setTimeout(() => setLinkCopied(false), 2000);
+            setTimeout(() => setLinkCopied(false), 4000);
             return;
         }
 
@@ -171,7 +171,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
             const url = `${window.location.origin}?id = ${newId} `;
             await navigator.clipboard.writeText(url);
             setLinkCopied(true);
-            setTimeout(() => setLinkCopied(false), 2000);
+            setTimeout(() => setLinkCopied(false), 4000);
 
         } catch (error: any) {
             console.error("Share failed", error);
