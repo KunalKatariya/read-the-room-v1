@@ -11,21 +11,40 @@ export default function LandingHero({ onStart }: { onStart: () => void }) {
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
-        getReviewsAction().then(data => {
-            if (data && data.length > 0) {
-                setReviews(data);
-            }
-        });
+        // Delay fetch to let the main hero animation (0.8s) finish smoothly first
+        const timer = setTimeout(() => {
+            getReviewsAction().then(data => {
+                if (data && data.length > 0) {
+                    setReviews(data);
+                }
+            });
+        }, 800);
 
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
         checkMobile();
         window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
+
+        return () => {
+            window.removeEventListener('resize', checkMobile);
+            clearTimeout(timer);
+        };
     }, []);
 
     // Mobile: Marquee if > 1 review (2+)
     // Desktop: Marquee if > 3 reviews (4+)
     const isMarquee = isMobile ? reviews.length > 1 : reviews.length > 3;
+
+    // Ensure we have enough content to scroll smoothly
+    // If fewer than 10 items, repeat list until it's at least 10 items long
+    // This ensures consistent visual density and speed calculation
+    const displayReviews = [...reviews];
+    while (isMarquee && displayReviews.length < 10 && displayReviews.length > 0) {
+        displayReviews.push(...reviews);
+    }
+
+    // Dynamic Duration: Slower pace requested (~45s baseline).
+    // ~4s per item ensures it remains readable and leisurely.
+    const duration = `${Math.max(45, displayReviews.length * 4)}s`;
 
     return (
         <section className="min-h-[90vh] flex flex-col items-center justify-center text-center px-4 relative overflow-hidden bg-background pb-20 pt-32">
@@ -64,15 +83,23 @@ export default function LandingHero({ onStart }: { onStart: () => void }) {
                 >
                     <p className="text-xs font-bold uppercase tracking-widest text-zinc-300 mb-4">Wall of Survivors</p>
 
-                    <div className="relative w-full overflow-hidden pointer-events-none">
+                    <div className="relative w-full overflow-hidden pointer-events-none fade-mask">
                         {isMarquee ? (
-                            <div className="flex gap-6 animate-marquee whitespace-nowrap">
-                                {[...reviews, ...reviews].map((review, i) => (
-                                    <ReviewCard key={i} review={review} />
+                            <div
+                                className="flex min-w-full w-max animate-marquee will-change-transform"
+                                style={{ animationDuration: duration }}
+                            >
+                                {/* We render the set twice to create the seamless loop effect */}
+                                {[...Array(2)].map((_, groupIndex) => (
+                                    <div key={groupIndex} className="flex shrink-0">
+                                        {displayReviews.map((review, i) => (
+                                            <ReviewCard key={`${groupIndex}-${i}`} review={review} className="mr-6" />
+                                        ))}
+                                    </div>
                                 ))}
                             </div>
                         ) : (
-                            <div className="flex justify-center flex-wrap gap-4 px-4">
+                            <div className="flex justify-center flex-wrap gap-4 px-4 w-full">
                                 {reviews.map((review, i) => (
                                     <ReviewCard key={i} review={review} />
                                 ))}
@@ -88,16 +115,22 @@ export default function LandingHero({ onStart }: { onStart: () => void }) {
                     100% { transform: translateX(-50%); }
                 }
                 .animate-marquee {
-                    animation: marquee 10s linear infinite;
+                    animation-name: marquee;
+                    animation-timing-function: linear;
+                    animation-iteration-count: infinite;
+                }
+                .fade-mask {
+                    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+                    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
                 }
             `}</style>
         </section>
     );
 }
 
-function ReviewCard({ review }: { review: Review }) {
+function ReviewCard({ review, className }: { review: Review, className?: string }) {
     return (
-        <div className="inline-block bg-white/80 backdrop-blur-sm border border-zinc-200 px-4 py-2 rounded-xl shadow-sm min-w-[250px] max-w-[300px] text-left">
+        <div className={`inline-block bg-white/80 backdrop-blur-sm border border-zinc-200 px-4 py-2 rounded-xl shadow-sm min-w-[250px] max-w-[300px] text-left ${className || ""}`}>
             <div className="flex items-center gap-1 mb-1">
                 {[...Array(5)].map((_, idx) => (
                     <Star key={idx} size={12} className={idx < review.stars ? "fill-yellow-400 text-yellow-400" : "fill-zinc-200 text-zinc-200"} />
