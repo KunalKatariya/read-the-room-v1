@@ -8,6 +8,7 @@ import { getReviewsAction, type Review } from "@/app/actions";
 
 export default function LandingHero({ onStart }: { onStart: () => void }) {
     const [reviews, setReviews] = useState<Review[]>([]);
+    const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {
         getReviewsAction().then(data => {
@@ -15,9 +16,16 @@ export default function LandingHero({ onStart }: { onStart: () => void }) {
                 setReviews(data);
             }
         });
+
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
     }, []);
 
-    const isMarquee = reviews.length >= 3;
+    // Mobile: Marquee if > 1 review (2+)
+    // Desktop: Marquee if > 3 reviews (4+)
+    const isMarquee = isMobile ? reviews.length > 1 : reviews.length > 3;
 
     return (
         <section className="min-h-[90vh] flex flex-col items-center justify-center text-center px-4 relative overflow-hidden bg-background pb-20 pt-32">
