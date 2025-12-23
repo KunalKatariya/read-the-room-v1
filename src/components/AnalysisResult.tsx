@@ -4,6 +4,8 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Download, Share2, Scan, Lock, Coffee, HelpCircle, FileText, Instagram, X } from "lucide-react";
 import { getGiphyGifAction } from "@/app/actions";
+import { useSearchParams } from "next/navigation";
+import ReviewForm from "./ReviewForm";
 import { AnalysisResult } from "@/lib/analyzer";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, ReferenceLine, ReferenceArea } from "recharts";
 import { toPng, toBlob } from "html-to-image";
@@ -746,8 +748,13 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                     </div>
                 )}
 
-                {/* PDF Specific Footer */}
-                <div className="text-center pb-8 border-t border-zinc-100 pt-8 mt-8 md:mt-16">
+                {/* --- 8. PRE-FOOTER: REVIEW FORM --- */}
+                {!isSharedView && (
+                    <ReviewForm />
+                )}
+
+                {/* --- 9. PDF SPECIFIC FOOTER (Only visible in PDF) --- */}
+                <div id="pdf-footer" className="hidden mt-12 text-center border-t border-zinc-200 pt-8 pb-8">
                     <h2 className="text-xl font-black tracking-tighter text-zinc-900 mb-2">READ THE ROOM</h2>
                     <p className="text-xs font-bold uppercase tracking-widest text-zinc-400">
                         COMPREHENSIVE VIBE AUDIT • {new Date().toLocaleDateString()}

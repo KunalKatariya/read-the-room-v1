@@ -109,3 +109,80 @@ export async function getAnalysisAction(analysisId: string) {
         return null;
     }
 }
+
+// ----------------------------------------------------------------------
+// REVIEW SYSTEM ACTIONS
+// ----------------------------------------------------------------------
+
+export interface Review {
+    name: string;
+    text: string;
+    stars: number;
+    date: string;
+}
+
+export async function submitReviewAction(stars: number, text: string, name: string) {
+    try {
+        const headersList = await headers();
+        const ip = headersList.get("x-forwarded-for") || "unknown";
+
+        // 1. RATE LIMITING (1 review per IP per hour)
+        const rateLimitKey = `review_limit:${ip}`;
+        const existingLimit = await kv.get(rateLimitKey);
+
+        if (existingLimit) {
+            return { success: false, error: "Too many reviews. Please wait a bit!" };
+        }
+
+        // Set rate limit (Expires in 1 hour)
+        await kv.set(rateLimitKey, "1", { ex: 3600 });
+
+        // 2. VALIDATION
+        if (!text || text.length < 5 || text.length > 200) {
+            return { success: false, error: "Review must be between 5 and 200 characters." };
+        }
+        if (stars < 1 || stars > 5) {
+            return { success: false, error: "Invalid rating." };
+        }
+
+        const newReview: Review = {
+            name: name.trim().slice(0, 20) || "Anonymous", // Cap name length
+            text: text.trim(),
+            stars,
+            date: new Date().toISOString()
+        };
+
+        // 3. ANTI-SPAM (Duplicate Content Check)
+        // Fetch current list to check duplicates
+        const currentReviews = (await kv.lrange("reviews_list", 0, 49)) as unknown as Review[];
+        const isDuplicate = currentReviews.some(r => r.text.toLowerCase() === newReview.text.toLowerCase());
+
+        if (isDuplicate) {
+            // Silent success (don't tell spammer they failed)
+            return { success: true };
+        }
+
+        // 4. SAVE (Push to list)
+        await kv.lpush("reviews_list", newReview);
+
+        // 5. TRIM (Keep only last 50)
+        await kv.ltrim("reviews_list", 0, 49);
+
+        return { success: true };
+
+    } catch (error) {
+        console.error("Submit Review Error:", error);
+        return { success: false, error: "Failed to submit review." };
+    }
+}
+
+export async function getReviewsAction() {
+    try {
+        // Fetch top 50
+        const reviews = await kv.lrange("reviews_list", 0, 49);
+        return reviews as unknown as Review[];
+    } catch (error) {
+        console.error("Get Reviews Error:", error);
+        return [];
+    }
+}
