@@ -694,7 +694,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                     disabled={shareLoading || linkCopied}
                                     className={`min-w-[140px] ${linkCopied ? "bg-green-500 text-white" : "bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-50"} px-6 py-3 rounded-full text-sm font-bold shadow-sm transition-all disabled:opacity-50 flex items-center justify-center gap-2`}
                                 >
-                                    {shareLoading ? "Creating..." : linkCopied ? "✓ Copied" : <><Share2 className="w-4 h-4" /> Copy Link</>}
+                                    {shareLoading ? "Creating..." : linkCopied ? "✓ Copied" : <><Share2 className="w-4 h-4" /> Share Result</>}
                                 </button>
                                 <button
                                     onClick={handleDownloadPDF}
