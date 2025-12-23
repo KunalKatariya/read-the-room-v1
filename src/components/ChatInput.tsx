@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Upload, MessageSquareText, FileText, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import JSZip from "jszip";
 
 interface ChatInputProps {
     onAnalyze: (text: string, apiKey: string) => void;
@@ -18,13 +19,60 @@ export default function ChatInput({ onAnalyze, onBack, onShowInstructions }: Cha
     const [text, setText] = useState("");
     const [isDragging, setIsDragging] = useState(false);
 
-    // Mock file read
+    // ZIP & File Handling Logic
+    const processFile = async (file: File) => {
+        // SECURITY: Whitelist extensions
+        const isZip = file.name.endsWith(".zip") || file.type === "application/zip" || file.type === "application/x-zip-compressed";
+        const isTxt = file.name.endsWith(".txt") || file.type === "text/plain";
+        const isCsv = file.name.endsWith(".csv") || file.type === "text/csv";
+
+        if (isTxt || isCsv) {
+            const text = await file.text();
+            setText(text);
+            setMode("paste");
+            return;
+        }
+
+        if (isZip) {
+            try {
+                // SECURITY: Client-side only. Zip never leaves browser.
+                const zip = new JSZip();
+                const content = await zip.loadAsync(file);
+
+                // Find valid text file (Prioritize _chat.txt from WhatsApp)
+                let targetFile = content.file("_chat.txt");
+
+                if (!targetFile) {
+                    // Fallback: Find first .txt file
+                    const txtFiles = Object.keys(content.files).filter(name => name.endsWith(".txt") && !name.startsWith("__MACOSX") && !content.files[name].dir);
+                    if (txtFiles.length > 0) {
+                        targetFile = content.file(txtFiles[0]);
+                    }
+                }
+
+                if (targetFile) {
+                    const text = await targetFile.async("string");
+                    setText(text);
+                    setMode("paste");
+                } else {
+                    // ERROR HANDLING: Specific feedback
+                    alert("No valid chat text file found in this Zip.\n\nPlease make sure you exported 'Without Media' or included the text file.");
+                }
+
+            } catch (err) {
+                console.error("Zip Error:", err);
+                alert("Could not read Zip file. It might be corrupted.");
+            }
+            return;
+        }
+
+        alert("Please upload a .txt, .csv, or .zip file.");
+    };
+
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const text = await file.text();
-        setText(text);
-        setMode("paste"); // Switch to paste view to show content
+        await processFile(file);
     };
 
     const handleDragOver = (e: React.DragEvent) => {
@@ -38,10 +86,8 @@ export default function ChatInput({ onAnalyze, onBack, onShowInstructions }: Cha
         e.preventDefault();
         setIsDragging(false);
         const file = e.dataTransfer.files?.[0];
-        if (file && (file.type === "text/plain" || file.name.endsWith(".txt") || file.name.endsWith(".csv"))) {
-            const text = await file.text();
-            setText(text);
-            setMode("paste");
+        if (file) {
+            await processFile(file);
         }
     };
 
@@ -124,11 +170,11 @@ export default function ChatInput({ onAnalyze, onBack, onShowInstructions }: Cha
                             </div>
                             <div className="text-center">
                                 <p className="font-bold text-black">Drag & drop your chat file</p>
-                                <p className="text-sm text-zinc-400 mt-1">.txt, .csv, or plain text</p>
+                                <p className="text-sm text-zinc-400 mt-1">.txt, .csv, or .zip</p>
                             </div>
                             <input
                                 type="file"
-                                accept=".txt,.csv"
+                                accept=".txt,.csv,.zip"
                                 className="hidden"
                                 id="file-upload"
                                 onChange={handleFileChange}
