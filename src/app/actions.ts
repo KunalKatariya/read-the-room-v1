@@ -16,8 +16,9 @@ const FALLBACK_GIFS = [
     "https://media.tenor.com/xtVDTs9QRuAAAAAd/its-happening-the-office.gif", // Office Happening (Panic)
     "https://media.tenor.com/GyxtaPIdJxuAAAAAC/spiderman-meme-pointing.gif", // Spiderman (Accusation)
     "https://media.tenor.com/QF03EtQxPUsAAAAC/kermit-the-frog-sipping-tea.gif", // Kermit Tea (Petty)
-    "https://media.tenor.com/images/3f7a8f8d6d6a2f4a4d6f8f8d6d6a2f4a/tenor.gif", // Leo Toast (Cheers)
-    "https://media.tenor.com/tTk21UjO4JAAAAAC/michael-jackson-popcorn.gif" // Popcorn (Drama)
+    "https://media.tenor.com/images/1c1361994af40292c10b27be636a0fb4/tenor.gif", // Success Kid (Win)
+    "https://media.tenor.com/tTk21UjO4JAAAAAC/michael-jackson-popcorn.gif", // Popcorn (Drama)
+    "https://media.tenor.com/images/bc8e6cdbd83e8700244439c29d107a61/tenor.gif" // Dog This Is Fine (Fine)
 ];
 
 // Helper to fetch GIPHY
@@ -50,6 +51,7 @@ export async function getGiphyGifAction(query: string): Promise<string | null> {
 }
 
 // ----------------------------------------------------------------------
+// ----------------------------------------------------------------------
 export async function getPricingAction() {
     const headersList = await headers();
     const country = headersList.get("x-vercel-ip-country") || "US"; // Default to US if local/unknown
@@ -61,8 +63,8 @@ export async function getPricingAction() {
     return getPricingForCountry(country);
 }
 
-export async function analyzeChatAction(text: string) {
-    console.log(`[Action] Starting analysis for text length: ${text.length}`);
+export async function analyzeChatAction(text: string, language: string = "English") {
+    console.log(`[Action] Starting analysis for text length: ${text.length}, Language: ${language}`);
 
     try {
         const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
@@ -71,7 +73,8 @@ export async function analyzeChatAction(text: string) {
 
         // 2. Perform Analysis
         console.log(`[Action] Calling Gemini...`);
-        const result = await analyzeChatWithGemini(text, apiKey);
+        // Pass language to analyzer
+        const result = await analyzeChatWithGemini(text, apiKey, language);
         console.log(`[Action] Gemini finished. Headline: ${result.vibeHeadline}`);
 
         // 3. Store initial payment state (UNPAID)

@@ -145,7 +145,7 @@ function AppContent() {
             <ChatInput
               onBack={() => setView("landing")}
               onShowInstructions={() => setView("instructions")}
-              onAnalyze={async (text, apiKey) => {
+              onAnalyze={async (text, apiKey, language) => {
                 setLoading(true);
                 // Ensure we are not in shared mode for a new analysis
                 setIsPublicShare(false);
@@ -169,7 +169,7 @@ function AppContent() {
                   }
 
                   // Call Server Action directly
-                  const res = await analyzeChatAction(payload);
+                  const res = await analyzeChatAction(payload, language);
 
                   if (res.roast.startsWith("Internal Error:")) {
                     setErrorMsg(res.roast.replace("Internal Error:", "").trim());

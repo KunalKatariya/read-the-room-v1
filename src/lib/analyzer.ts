@@ -58,36 +58,27 @@ export interface AnalysisResult {
 // Keep heuristics for hard numbers (LLMs are bad at counting)
 function getBasicStats(text: string) {
     const lines = text.split(/\n/).filter(l => l.trim().length > 0);
-    const totalLines = lines.length;
-    let youCount = 0;
-
-    // Naive sender usage
-    const lower = text.toLowerCase();
-    // Rough estimate logic or just rely on newlines
-
-    const chaosFactor = Math.random();
-    youCount = Math.floor(totalLines * (0.4 + chaosFactor * 0.2));
-
     return {
-        totalMessages: totalLines,
-        youCount,
-        themCount: totalLines - youCount,
-        youAvgLength: Math.floor(Math.random() * 50) + 10,
-        themAvgLength: Math.floor(Math.random() * 60) + 10
+        totalMessages: lines.length,
+        // Detailed stats will be handled by AI or client-side parsing in future
+        // For now we trust AI for the breakdown as regexing names is hard without known names
+        replyTimeGap: "Unknown"
     };
 }
 
-export async function analyzeChatWithGemini(text: string, apiKey: string): Promise<AnalysisResult> {
+export async function analyzeChatWithGemini(text: string, apiKey: string, language: string = "English"): Promise<AnalysisResult> {
     const stats = getBasicStats(text);
-    console.log(`[Gemini] Starting analysis. Key present: ${!!apiKey}, Text len: ${text.length}`);
+    console.log(`[Gemini] Starting analysis. Key present: ${!!apiKey}, Text len: ${text.length}, Language: ${language}`);
 
     // Initialize Gemini strict
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     const prompt = `
-    Analyze this chat log (or snippet) between two people. 
-    You are a "Internet Vibe Checker". Your tone is SPICY, PLAYFUL, Gen Z, and "tough love" encouraging. You use a LOT of emojis. 💀😭✨
+    Analyze this chat log (or snippet) between one or more people (Group Chat or DM). 
+    You are a "Internet Vibe Checker". Your tone is SASSY, PLAYFUL, and primarily a "Bestie who keeps it real". You roast them for their cringe 💀, but you wrap it in love and support 💖. You use a LOT of emojis.
+    
+    Target Language: ${language}
     
     Input Text (truncated for brevity):
     """
@@ -101,13 +92,17 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
         "sentimentLabel": "One of: Lovey-dovey 🤮, Cold 🥶, Toxic ☣️, Friendly 🤝, Professional 👔, Flirty 🫦, Neutral 😐",
         "sentimentScore": 0-100 (integer, higher is better/more positive),
         "sentimentTrend": [50, 60, 40, ...], // Array of exactly 10 integers (0-100) representing the emotional arc from start to finish
-        "participants": ["Name 1", "Name 2"], // Identify the names of the two people (or "You" and "Them" if unknown)
-        "dominanceScore": 50, // 0-100, representing how much "Name 1" dominated the conversation (e.g. 70 means Name 1 sent 70% of vibes)
+        "participants": ["Name 1", "Name 2", "Name 3"], // Identify ALL active participants (Max 6)
+        "dominanceOverview": [
+             { "name": "Name 1", "percentage": 60 },
+             { "name": "Name 2", "percentage": 40 }
+             // ... up to all participants, must sum to roughly 100
+        ],
         "redFlags": ["🚩 flag 1", "🚩 flag 2", "🚩 flag 3"],
         "redFlagOverview": "A short, punchy sentence summarizing the overall red flag energy of the relationship (not just one specific event). Max 12 words.",
         "greenFlags": ["✅ flag 1", "✅ flag 2"],
         "greenFlagOverview": "A short, punchy sentence summarizing the overall green flag energy. Max 12 words.",
-        "effortBalance": "A verdict on who is trying harder (e.g. 'You are carrying 🎒')",
+        "effortBalance": "A verdict on who is trying harder (e.g. 'You are carrying 🎒' or 'Group effort' or 'Name 1 is the CEO of Yapping')",
         "movieAnalogy": "If this chat was a movie, what would it be? (Max 1 sentence). IMPORTANT: Do NOT just say 'The Notebook' or 'When Harry Met Sally'. Be creative! Use Bollywood, Hollywood, Indie films, obscure 90s rom-coms, horror movies, etc. 🎬",
         "attachmentStyle": "A specific, funny Gen-z label for their attachment style. Do NOT reuse common ones like 'Stage 5 Clinger'. Be extremely specific and roasted. Examples: 'Recovering People Pleaser', 'Text-Bombardment Specialist', 'Emotional Hit-and-Run Driver', 'Situationship Veteran', etc. 🔮",
         "replyTimeGap": "E.g. 'You reply fast, they hibernate 😴'",
@@ -117,6 +112,7 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
         },
         "nextSteps": ["Action 1", "Action 2", "Action 3"],
         "rpgCards": [
+            // Generate ONE card per participant found (Max 6)
             {
                 "name": "Name 1",
                 "role": "A creative RPG-style class title (e.g. 'Level 99 Yapper', 'Paladin of Patience')",
@@ -131,10 +127,7 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
             },
             {
                 "name": "Name 2",
-                "role": "Creative RPG title",
-                "level": 1-99 (integer),
-                "oneLiner": "Roast",
-                "stats": { "yapLevel": 0, "simpScore": 0, "cringeFactor": 0, "chaosMeasure": 0 }
+                // ... same structure
             }
         ],
         "songRecommendations": [
@@ -149,15 +142,15 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
         "gifSearchQuery": "A specific, funny search term for GIPHY that perfectly captures the mood of this relationship (e.g. 'Michael Scott grimacing', 'Elmo fire', 'Woman yelling at cat')."
     }
     
-    IMPORTANT: 
-    1. Be deterministic. If the input is similar, the output should be similar.
-    2. Make the "redFlags" funny, grounded, and feel free to use emojis!
-    3. For "songRecommendations", DO NOT just pick generic Top 40 pop songs. Dig deep! Use:
-       - 2000s Emo/Punk for toxic chats
-       - 90s R&B for flirty chats
-       - Meme songs / TikTok sounds for funny chats
-       - Indie/Alt for boring chats
-       - VARY THE GENRES. Do not give 3 Taylor Swift songs.
+    IMPORTANT INSTRUCTIONS FOR LANGUAGE (${language}):
+    1. The content of the fields (values) MUST be in ${language}.
+    2. Do NOT simply translate English literals. Use CULTURALLY RELEVANT slang and humor for ${language}.
+       - If ${language} is "Hindi", use "Hinglish" (Hindi + English mix) which is popular on the internet. Use words like "Bhai", "Yaar", "Scene", "Matlab", etc. The vibe should be "Delhi/Mumbai Gen Z".
+       - If ${language} is "Japanese", use casual/slang Japanese (Tameguchi/Wakamono-kotoba). Use www, 草, and other Japanese net slang. The vibe should be "Tokyo Gen Z".
+    3. Keep the JSON keys in ENGLISH. Only translate the VALUES.
+    4. Be deterministic.
+    5. Make the "redFlags" funny, grounded, and feel free to use emojis!
+    6. For "songRecommendations", recommend songs popular in the culture of ${language} if appropriate, or global hits that fit the vibe.
     `;
 
     try {
@@ -172,11 +165,6 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
         if (codeBlockMatch && codeBlockMatch[1]) {
             jsonString = codeBlockMatch[1].trim();
         } else {
-            // 2. Fallback: Find the FIRST valid balanced JSON object? 
-            // Or just try the first outer brace pair if no code blocks.
-            // Using lastIndexOf("}") can be dangerous if there's multiple objects.
-            // Let's try to be smarter: find first { and last } BUT if that fails, try to find the *first* closing brace that matches?
-            // For now, let's just stick to the first { and last } trimming, but safer.
             const start = responseText.indexOf("{");
             const end = responseText.lastIndexOf("}") + 1;
             if (start !== -1 && end > start) {
@@ -184,86 +172,76 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
             }
         }
 
-        // Clean potentially bad generic cleanup
         if (!jsonString) throw new Error("No JSON found in response");
 
         const data = JSON.parse(jsonString);
 
-        // Use AI-generated trend or fallback to flat line if missing
+        // Use AI-generated trend or fallback
         const trendData = (data.sentimentTrend && Array.isArray(data.sentimentTrend) && data.sentimentTrend.length > 0)
             ? data.sentimentTrend.map((score: number, i: number) => ({ messageIndex: i * 10, score }))
             : Array(10).fill(50).map((_, i) => ({ messageIndex: i * 10, score: 50 }));
 
-        const p1 = data.participants?.[0] || "You";
-        const p2 = data.participants?.[1] || "Them";
-        const p1Score = data.dominanceScore || 50;
+        // Map Dominance Overview from AI
+        const dominanceData = data.dominanceOverview
+            ? data.dominanceOverview.map((d: any) => ({ name: d.name, value: d.percentage }))
+            : [{ name: "You", value: 50 }, { name: "Them", value: 50 }];
 
         return {
-            vibeHeadline: data.vibeHeadline || "Vibe Check Failed (But it's probably messy)",
+            vibeHeadline: data.vibeHeadline || "Vibe Check Failed",
             confidence: 89,
             stats: {
                 ...stats,
+                totalMessages: stats.totalMessages,
+                youCount: 0, // Deprecated/Not used directly anymore in favor of chart
+                themCount: 0,
+                youAvgLength: 0,
+                themAvgLength: 0,
                 replyTimeGap: data.replyTimeGap || "Unclear timings"
             },
-            roast: data.roast || "No roast available, you're too boring.",
+            roast: data.roast || "No roast available.",
             sentiment: {
                 score: data.sentimentScore || 50,
                 label: data.sentimentLabel || "Neutral"
             },
             chartData: {
                 sentimentTrend: trendData,
-                dominance: [
-                    { name: p1, value: p1Score },
-                    { name: p2, value: 100 - p1Score }
-                ]
+                dominance: dominanceData
             },
             redFlags: data.redFlags || [],
-            redFlagOverview: data.redFlagOverview || data.redFlags?.[0] || "Too many to count",
+            redFlagOverview: data.redFlagOverview || "Too many to count",
             greenFlags: data.greenFlags || [],
-            greenFlagOverview: data.greenFlagOverview || data.greenFlags?.[0] || "None found",
+            greenFlagOverview: data.greenFlagOverview || "None found",
             turningPoint: data.turningPoint || null,
             effortBalance: data.effortBalance || "Matched",
-            movieAnalogy: data.movieAnalogy || "The Notebook (if they never met)",
+            movieAnalogy: data.movieAnalogy || "The Notebook",
             attachmentStyle: data.attachmentStyle || "Unknown",
-            nextSteps: data.nextSteps || ["Move on", "Drink water"],
-            rpgCards: data.rpgCards || [
-                { name: p1, role: "NPC", level: 1, oneLiner: "Loading...", stats: { yapLevel: 50, simpScore: 50, cringeFactor: 50, chaosMeasure: 50 } },
-                { name: p2, role: "NPC", level: 1, oneLiner: "Loading...", stats: { yapLevel: 50, simpScore: 50, cringeFactor: 50, chaosMeasure: 50 } }
-            ],
-            songRecommendations: data.songRecommendations || [
-                { title: "Toxic", artist: "Britney Spears", reason: "Do we need to explain?" },
-                { title: "Hot N Cold", artist: "Katy Perry", reason: "Mixed signals slightly detected." },
-                { title: "We Are Never Ever Getting Back Together", artist: "Taylor Swift", reason: "Just a hunch." }
-            ],
-            gifSearchQuery: data.gifSearchQuery || "confused math lady"
+            nextSteps: data.nextSteps || ["Move on"],
+            rpgCards: data.rpgCards || [],
+            songRecommendations: data.songRecommendations || [],
+            gifSearchQuery: data.gifSearchQuery || "confused"
         };
 
     } catch (e: any) {
         console.error("Gemini Error:", e);
-        // Fallback to basic heuristics if API fails
         return {
             vibeHeadline: "Brain Freeze 🥶",
             confidence: 10,
-            stats: { ...stats, replyTimeGap: "Unknown" },
+            stats: { ...stats, totalMessages: 0, youCount: 0, themCount: 0, youAvgLength: 0, themAvgLength: 0, replyTimeGap: "Unknown" },
             roast: `Internal Error: ${e.message || "Unknown error"}`,
             sentiment: { score: 50, label: "Neutral" },
             chartData: { sentimentTrend: [], dominance: [] },
-            redFlags: ["Invalid API Key", "Model Not Found", "Internet Connection"],
-            redFlagOverview: "Connection Error",
+            redFlags: ["Error"],
+            redFlagOverview: "Error",
             greenFlags: [],
-            greenFlagOverview: "None",
+            greenFlagOverview: "Error",
             turningPoint: null,
             effortBalance: "Unknown",
-            movieAnalogy: "Error 404: Love Not Found",
-            attachmentStyle: "Avoidant",
-            nextSteps: ["Check your API Key", "Try again (console has details)"],
+            movieAnalogy: "Error",
+            attachmentStyle: "Error",
+            nextSteps: [],
             rpgCards: [],
-            songRecommendations: [
-                { title: "Error", artist: "System Failure", reason: "Something went wrong." },
-                { title: "404", artist: "Page Not Found", reason: "Try again later." },
-                { title: "No Connection", artist: "The WiFi", reason: "Check your internet." }
-            ],
-            gifSearchQuery: "error glitch"
+            songRecommendations: [],
+            gifSearchQuery: "error"
         };
     }
 }

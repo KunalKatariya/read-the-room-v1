@@ -298,12 +298,28 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
         );
     };
 
-    const COLORS = ["#18181b", "#e4e4e7"];
-
-    const safeRpgCards = (result.rpgCards && result.rpgCards.length > 0) ? result.rpgCards : [
-        { name: result.chartData.dominance[0]?.name || "Player 1", role: "The Mystery Guest", level: 1, oneLiner: "Stats loading... (Run a new analysis!)", stats: { yapLevel: 50, simpScore: 50, cringeFactor: 50, chaosMeasure: 50 } },
-        { name: result.chartData.dominance[1]?.name || "Player 2", role: "The Unknown Player", level: 1, oneLiner: "Stats loading... (Run a new analysis!)", stats: { yapLevel: 50, simpScore: 50, cringeFactor: 50, chaosMeasure: 50 } }
+    // Extended palette for group chats
+    const COLORS = [
+        "#18181b", // Zinc 900 (Black)
+        "#52525b", // Zinc 600
+        "#a1a1aa", // Zinc 400
+        "#e4e4e7", // Zinc 200
+        "#f472b6", // Pink 400
+        "#60a5fa", // Blue 400
+        "#34d399", // Emerald 400
+        "#fbbf24", // Amber 400
+        "#818cf8", // Indigo 400
     ];
+
+    const safeRpgCards = (result.rpgCards && result.rpgCards.length > 0)
+        ? result.rpgCards
+        : result.chartData.dominance.map((d, i) => ({
+            name: d.name,
+            role: "NPC",
+            level: 1,
+            oneLiner: "Stats loading...",
+            stats: { yapLevel: 50, simpScore: 50, cringeFactor: 50, chaosMeasure: 50 }
+        }));
 
     const [expandedSong, setExpandedSong] = useState<number | null>(null);
 
@@ -363,17 +379,18 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                 </div>
                             </div>
 
-                            <div>
-                                <h3 className="text-xs font-bold uppercase tracking-widest mb-2 text-zinc-400">{result.chartData.dominance[0].name}'s Contribution</h3>
-                                <div className="text-3xl md:text-4xl font-bold text-zinc-900 tracking-tight">
-                                    <AnimatedCounter value={result.chartData.dominance[0].value} />%
-                                </div>
-                            </div>
-
-                            <div>
-                                <h3 className="text-xs font-bold uppercase tracking-widest mb-2 text-zinc-400">{result.chartData.dominance[1].name}'s Contribution</h3>
-                                <div className="text-3xl md:text-4xl font-bold text-zinc-900 tracking-tight">
-                                    <AnimatedCounter value={result.chartData.dominance[1].value} />%
+                            <div className="pt-2">
+                                <h3 className="text-xs font-bold uppercase tracking-widest mb-3 text-zinc-400">Contribution</h3>
+                                <div className="space-y-3">
+                                    {result.chartData.dominance.slice(0, 4).map((d, i) => (
+                                        <div key={i} className="flex justify-between items-center bg-white p-3 rounded-xl border border-zinc-100 shadow-sm">
+                                            <span className="text-sm font-bold text-zinc-700 truncate max-w-[120px]">{d.name}</span>
+                                            <span className="text-xl font-bold text-zinc-900"><AnimatedCounter value={d.value} />%</span>
+                                        </div>
+                                    ))}
+                                    {result.chartData.dominance.length > 4 && (
+                                        <p className="text-xs text-center text-zinc-400 italic">+ {result.chartData.dominance.length - 4} others</p>
+                                    )}
                                 </div>
                             </div>
 
@@ -541,7 +558,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                 <h3 className="text-center text-sm font-bold uppercase tracking-[0.2em] text-zinc-400 mb-8">
                                     Character Sheets
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                                     {safeRpgCards.map((card, idx) => (
                                         <div
                                             key={idx}
@@ -809,8 +826,13 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                                     <div className="text-5xl font-bold text-zinc-900 tracking-tight">{result.stats.totalMessages}</div>
                                 </div>
                                 <div>
-                                    <h3 className="text-xs font-bold uppercase tracking-widest mb-2 text-zinc-400">Your Contribution</h3>
-                                    <div className="text-5xl font-bold text-zinc-900 tracking-tight">{result.chartData.dominance[0].value}%</div>
+                                    <h3 className="text-xs font-bold uppercase tracking-widest mb-2 text-zinc-400">Top Contributor</h3>
+                                    <div className="text-5xl font-bold text-zinc-900 tracking-tight">
+                                        {[...result.chartData.dominance].sort((a, b) => b.value - a.value)[0].name}
+                                    </div>
+                                    <div className="text-sm text-zinc-500 font-medium mt-1">
+                                        {[...result.chartData.dominance].sort((a, b) => b.value - a.value)[0].value}% of messages
+                                    </div>
                                 </div>
                                 <div>
                                     <h3 className="text-xs font-bold uppercase tracking-widest mb-2 text-zinc-400">Vibe Score</h3>
@@ -963,7 +985,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                         <h3 className="text-center text-sm font-bold uppercase tracking-[0.2em] text-zinc-400 mb-8">
                             Character Sheets
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {safeRpgCards.map((card, idx) => (
                                 <div key={idx} className="relative overflow-hidden bg-white border-2 border-zinc-900 rounded-xl p-6 shadow-[4px_4px_0px_0px_rgba(24,24,27,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(24,24,27,1)] transition-all">
                                     <div className="absolute top-0 right-0 p-2 bg-zinc-900 text-white text-xs font-bold rounded-bl-xl z-20">
@@ -1113,8 +1135,8 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
                             {/* Participants Section */}
                             <div>
                                 <p style={{ fontSize: '12px', textTransform: 'uppercase', color: '#a1a1aa', marginBottom: '4px' }}> Chat Participants</p>
-                                <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#18181b' }}>
-                                    {result.chartData.dominance[0].name} & {result.chartData.dominance[1].name}
+                                <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#18181b', wordBreak: 'break-word' }}>
+                                    {result.chartData.dominance.map(d => d.name).join(" & ")}
                                 </p>
                             </div>
 
