@@ -173,7 +173,7 @@ export default function AnalysisResultView({ result, onBack, isSharedView = fals
             }
 
             // 5. Copy & visual feedback
-            const url = `${window.location.origin}?id = ${newId} `;
+            const url = `${window.location.origin}?id=${newId}`;
             await navigator.clipboard.writeText(url);
             setLinkCopied(true);
             setTimeout(() => setLinkCopied(false), 4000);
