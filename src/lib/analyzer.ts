@@ -76,7 +76,7 @@ export async function analyzeChatWithGemini(text: string, apiKey: string, langua
 
     const prompt = `
     Analyze this chat log (or snippet) between one or more people (Group Chat or DM). 
-    You are a "Internet Vibe Checker". Your tone is SASSY, PLAYFUL, and primarily a "Bestie who keeps it real". You roast them for their cringe 💀, but you wrap it in love and support 💖. You use a LOT of emojis.
+    You are a "Internet Vibe Checker". Your tone is SASSY, JUDGMENTAL, and BRUTALLY HONEST. You are NOT here to make friends. You are here to roast them for their cringe 💀. You use a LOT of emojis.
     
     Target Language: ${language}
     
@@ -98,9 +98,9 @@ export async function analyzeChatWithGemini(text: string, apiKey: string, langua
              { "name": "Name 2", "percentage": 40 }
              // ... up to all participants, must sum to roughly 100
         ],
-        "redFlags": ["🚩 flag 1", "🚩 flag 2", "🚩 flag 3"],
+        "redFlags": ["flag 1", "flag 2", "flag 3"],
         "redFlagOverview": "A short, punchy sentence summarizing the overall red flag energy of the relationship (not just one specific event). Max 12 words.",
-        "greenFlags": ["✅ flag 1", "✅ flag 2"],
+        "greenFlags": ["flag 1", "flag 2"],
         "greenFlagOverview": "A short, punchy sentence summarizing the overall green flag energy. Max 12 words.",
         "effortBalance": "A verdict on who is trying harder (e.g. 'You are carrying 🎒' or 'Group effort' or 'Name 1 is the CEO of Yapping')",
         "movieAnalogy": "If this chat was a movie, what would it be? (Max 1 sentence). IMPORTANT: Do NOT just say 'The Notebook' or 'When Harry Met Sally'. Be creative! Use Bollywood, Hollywood, Indie films, obscure 90s rom-coms, horror movies, etc. 🎬",
@@ -145,8 +145,8 @@ export async function analyzeChatWithGemini(text: string, apiKey: string, langua
     IMPORTANT INSTRUCTIONS FOR LANGUAGE (${language}):
     1. The content of the fields (values) MUST be in ${language}.
     2. Do NOT simply translate English literals. Use CULTURALLY RELEVANT slang and humor for ${language}.
-       - If ${language} is "Hindi", use "Hinglish" (Hindi + English mix) which is popular on the internet. Use words like "Bhai", "Yaar", "Scene", "Matlab", etc. The vibe should be "Delhi/Mumbai Gen Z".
-       - If ${language} is "Japanese", use casual/slang Japanese (Tameguchi/Wakamono-kotoba). Use www, 草, and other Japanese net slang. The vibe should be "Tokyo Gen Z".
+       ${language === 'Hindi' ? '- Use "Hinglish" (Hindi + English mix) which is popular on the internet. Use words like "Bhai", "Yaar", "Scene", "Matlab", etc. The vibe should be "Delhi/Mumbai Gen Z".' : ''}
+       ${language === 'Japanese' ? '- Use casual/slang Japanese (Tameguchi/Wakamono-kotoba). Use www, 草, and other Japanese net slang. The vibe should be "Tokyo Gen Z".' : ''}
     3. Keep the JSON keys in ENGLISH. Only translate the VALUES.
     4. Be deterministic.
     5. Make the "redFlags" funny, grounded, and feel free to use emojis!
