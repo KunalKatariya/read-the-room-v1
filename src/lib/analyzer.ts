@@ -66,9 +66,9 @@ function getBasicStats(text: string) {
     };
 }
 
-export async function analyzeChatWithGemini(text: string, apiKey: string, language: string = "English"): Promise<AnalysisResult> {
+export async function analyzeChatWithGemini(text: string, apiKey: string): Promise<AnalysisResult> {
     const stats = getBasicStats(text);
-    console.log(`[Gemini] Starting analysis. Key present: ${!!apiKey}, Text len: ${text.length}, Language: ${language}`);
+    console.log(`[Gemini] Starting analysis. Key present: ${!!apiKey}, Text len: ${text.length}`);
 
     // Initialize Gemini strict
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -78,7 +78,7 @@ export async function analyzeChatWithGemini(text: string, apiKey: string, langua
     Analyze this chat log (or snippet) between one or more people (Group Chat or DM). 
     You are a "Internet Vibe Checker". Your tone is SASSY, JUDGMENTAL, and BRUTALLY HONEST. You are NOT here to make friends. You are here to roast them for their cringe 💀. You use a LOT of emojis.
     
-    Target Language: ${language}
+    Target Language: English
     
     Input Text (truncated for brevity):
     """
@@ -142,15 +142,13 @@ export async function analyzeChatWithGemini(text: string, apiKey: string, langua
         "gifSearchQuery": "A specific, funny search term for GIPHY that perfectly captures the mood of this relationship (e.g. 'Michael Scott grimacing', 'Elmo fire', 'Woman yelling at cat')."
     }
     
-    IMPORTANT INSTRUCTIONS FOR LANGUAGE (${language}):
-    1. The content of the fields (values) MUST be in ${language}.
-    2. Do NOT simply translate English literals. Use CULTURALLY RELEVANT slang and humor for ${language}.
-       ${language === 'Hindi' ? '- Use "Hinglish" (Hindi + English mix) which is popular on the internet. Use words like "Bhai", "Yaar", "Scene", "Matlab", etc. The vibe should be "Delhi/Mumbai Gen Z".' : ''}
-       ${language === 'Japanese' ? '- Use casual/slang Japanese (Tameguchi/Wakamono-kotoba). Use www, 草, and other Japanese net slang. The vibe should be "Tokyo Gen Z".' : ''}
+    IMPORTANT INSTRUCTIONS:
+    1. The content of the fields (values) MUST be in English.
+    2. Use Gen Z slang and humor.
     3. Keep the JSON keys in ENGLISH. Only translate the VALUES.
     4. Be deterministic.
     5. Make the "redFlags" funny, grounded, and feel free to use emojis!
-    6. For "songRecommendations", recommend songs popular in the culture of ${language} if appropriate, or global hits that fit the vibe.
+    6. For "songRecommendations", recommend songs that fit the vibe.
     `;
 
     try {

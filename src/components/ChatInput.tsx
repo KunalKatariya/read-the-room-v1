@@ -8,14 +8,10 @@ import { Upload, MessageSquareText, FileText, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import JSZip from "jszip";
 
-const LANGUAGES = [
-    { id: "English", label: "🇺🇸 English" },
-    { id: "Hindi", label: "🇮🇳 Hindi" },
-    { id: "Japanese", label: "🇯🇵 Japanese" }
-];
+
 
 interface ChatInputProps {
-    onAnalyze: (text: string, apiKey: string, language: string) => void;
+    onAnalyze: (text: string, apiKey: string) => void;
     onBack: () => void;
     onShowInstructions?: () => void;
 }
@@ -24,7 +20,7 @@ export default function ChatInput({ onAnalyze, onBack, onShowInstructions }: Cha
     const [mode, setMode] = useState<"paste" | "upload">("paste");
     const [text, setText] = useState("");
     const [isDragging, setIsDragging] = useState(false);
-    const [language, setLanguage] = useState("English");
+
 
     // ZIP & File Handling Logic
     const processFile = async (file: File) => {
@@ -195,26 +191,7 @@ export default function ChatInput({ onAnalyze, onBack, onShowInstructions }: Cha
 
                 <div className="p-8 border-t border-zinc-100 bg-zinc-50/50 flex flex-col gap-6">
 
-                    {/* Language Selector */}
-                    <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold uppercase tracking-wide text-zinc-400">Roast Language</label>
-                        <div className="flex flex-wrap gap-2">
-                            {LANGUAGES.map((lang) => (
-                                <button
-                                    key={lang.id}
-                                    onClick={() => setLanguage(lang.id)}
-                                    className={cn(
-                                        "px-4 py-2 rounded-lg text-sm font-medium transition-all border",
-                                        language === lang.id
-                                            ? "bg-white border-black text-black shadow-sm transform scale-105"
-                                            : "bg-transparent border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:bg-white"
-                                    )}
-                                >
-                                    {lang.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+
 
                     {!hasEnvKey && (
                         <>
@@ -244,7 +221,7 @@ export default function ChatInput({ onAnalyze, onBack, onShowInstructions }: Cha
                                     alert("Please enter an API Key");
                                     return;
                                 }
-                                onAnalyze(text, key, language);
+                                onAnalyze(text, key);
                             }}
                             disabled={text.length < 10}
                             className="w-full sm:w-auto bg-black text-white hover:bg-zinc-800 font-bold rounded-full h-14 px-8 shadow-xl shadow-zinc-200"

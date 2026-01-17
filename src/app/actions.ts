@@ -63,8 +63,8 @@ export async function getPricingAction() {
     return getPricingForCountry(country);
 }
 
-export async function analyzeChatAction(text: string, language: string = "English") {
-    console.log(`[Action] Starting analysis for text length: ${text.length}, Language: ${language}`);
+export async function analyzeChatAction(text: string) {
+    console.log(`[Action] Starting analysis for text length: ${text.length}`);
 
     try {
         const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "";
@@ -74,7 +74,7 @@ export async function analyzeChatAction(text: string, language: string = "Englis
         // 2. Perform Analysis
         console.log(`[Action] Calling Gemini...`);
         // Pass language to analyzer
-        const result = await analyzeChatWithGemini(text, apiKey, language);
+        const result = await analyzeChatWithGemini(text, apiKey);
         console.log(`[Action] Gemini finished. Headline: ${result.vibeHeadline}`);
 
         // 3. Store initial payment state (UNPAID)
