@@ -30,7 +30,9 @@ export async function getGiphyGifAction(query: string): Promise<string | null> {
             return FALLBACK_GIFS[Math.floor(Math.random() * FALLBACK_GIFS.length)];
         }
 
-        const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${apiKey}&q=${encodeURIComponent(query)}&limit=1&rating=pg`);
+        // TRUNCATE QUERY to avoid URI Too Long (414)
+        const safeQuery = query.substring(0, 100);
+        const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${apiKey}&q=${encodeURIComponent(safeQuery)}&limit=1&rating=pg`);
 
         if (!res.ok) {
             throw new Error(`GIPHY API Error: ${res.statusText}`);

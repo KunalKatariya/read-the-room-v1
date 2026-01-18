@@ -146,7 +146,7 @@ export async function analyzeChatWithGemini(text: string, apiKey: string): Promi
             { "title": "...", "artist": "...", "reason": "..." },
             { "title": "...", "artist": "...", "reason": "..." }
         ],
-        "gifSearchQuery": "A specific, funny search term for GIPHY that perfectly captures the mood of this relationship (e.g. 'Michael Scott grimacing', 'Elmo fire', 'Woman yelling at cat')."
+        "gifSearchQuery": "A specific, funny search term for GIPHY (Max 3-4 words) that perfectly captures the mood (e.g. 'Michael Scott grimacing', 'Elmo fire')."
     }
     
     IMPORTANT INSTRUCTIONS:
