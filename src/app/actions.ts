@@ -31,8 +31,14 @@ export async function getGiphyGifAction(query: string): Promise<string | null> {
         }
 
         // TRUNCATE QUERY to avoid URI Too Long (414)
-        const safeQuery = query.substring(0, 100);
-        const res = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=${apiKey}&q=${encodeURIComponent(safeQuery)}&limit=1&rating=pg`);
+        // Reverted aggressive truncation per user request. Relying on AI prompt.
+        const safeQuery = query;
+        const targetUrl = `https://api.giphy.com/v1/gifs/search?api_key=${apiKey}&q=${encodeURIComponent(safeQuery)}&limit=1&rating=pg`;
+
+        console.log(`[Giphy Debug] Original Query Len: ${query.length}`);
+        console.log(`[Giphy Debug] Request URL: ${targetUrl.replace(apiKey, "HIDDEN_KEY")}`);
+
+        const res = await fetch(targetUrl);
 
         if (!res.ok) {
             throw new Error(`GIPHY API Error: ${res.statusText}`);
