@@ -83,6 +83,19 @@ So you think you can roast better than our AI? PRs are welcome!
 4.  Push to the branch (`git push origin feature/AmazingFeature`).
 5.  Open a Pull Request.
 
+## 🎙️ Faster-Whisper M4 Fix Documentation
+
+This repository also contains comprehensive documentation for fixing the **"IndexError: vector"** error when using faster-whisper on M4 MacBooks.
+
+**Quick Links:**
+- **[WHISPER_FIX_README.md](WHISPER_FIX_README.md)** - Start here for the complete guide
+- **[M4_FIX_SUMMARY.md](M4_FIX_SUMMARY.md)** - Quick summary with code changes
+- **[examples/transcriber_fix.py](examples/transcriber_fix.py)** - Working Python example
+
+**The Fix:** Change `WhisperModel(model_size)` to `WhisperModel(model_size, device="cpu", compute_type="int8")`
+
+See [WHISPER_FIX_README.md](WHISPER_FIX_README.md) for full details.
+
 ## 📜 License
 
 Distributed under the MIT License. See `LICENSE` for more information.
