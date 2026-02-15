@@ -38,6 +38,9 @@
 ### Prerequisites
 -   Node.js 18+
 -   npm / pnpm / yarn
+-   **Platform Support:** Windows, macOS (Intel & Apple Silicon), Linux (x86-64 & ARM64)
+
+> **Note:** This application is **fully compatible with ARM64 macOS** (Apple Silicon M1/M2/M3). All dependencies run natively without requiring Rosetta 2. See [COMPATIBILITY.md](./COMPATIBILITY.md) for detailed platform information.
 
 ### Installation
 
@@ -82,6 +85,22 @@ So you think you can roast better than our AI? PRs are welcome!
 3.  Commit your changes (`git commit -m 'Add some AmazingFeature'`).
 4.  Push to the branch (`git push origin feature/AmazingFeature`).
 5.  Open a Pull Request.
+
+Please ensure your contributions maintain cross-platform compatibility. See [COMPATIBILITY.md](./COMPATIBILITY.md) for details.
+
+## 📚 Documentation
+
+-   **[Compatibility Guide](./COMPATIBILITY.md)** - Platform compatibility and system requirements
+-   **[Getting Started](#-getting-started)** - Installation and setup instructions
+
+## 💻 Platform Compatibility
+
+**Read The Room** runs natively on:
+-   ✅ **macOS** (Intel & Apple Silicon M1/M2/M3)
+-   ✅ **Windows** (x86-64 & ARM64)
+-   ✅ **Linux** (x86-64 & ARM64)
+
+For detailed compatibility information including future CTranslate2 support, see [COMPATIBILITY.md](./COMPATIBILITY.md).
 
 ## 📜 License
 
